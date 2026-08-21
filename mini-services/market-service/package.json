@@ -1,0 +1,17 @@
+{
+  "name": "market-service",
+  "version": "1.0.0",
+  "description": "Simulated market-data WebSocket service for ExpertBot Pro",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}
