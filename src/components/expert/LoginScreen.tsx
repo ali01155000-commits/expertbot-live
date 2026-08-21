@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Bot,
+  CheckCircle2,
   Eye,
   EyeOff,
   KeyRound,
@@ -10,6 +11,7 @@ import {
   LogIn,
   ShieldAlert,
   Terminal,
+  Trash2,
   Zap,
 } from "lucide-react";
 
@@ -30,21 +32,75 @@ import {
 } from "@/lib/expert-store";
 import { REGION_LIST } from "@/lib/expert-types";
 
+const TOKEN_KEY = "expertbot.token";
+const REGION_KEY = "expertbot.region";
+const DEMO_KEY = "expertbot.isDemo";
+const AUTOCONNECT_KEY = "expertbot.autoconnect";
+
+function loadSaved() {
+  if (typeof window === "undefined") return null;
+  try {
+    const token = localStorage.getItem(TOKEN_KEY) || "";
+    const region = localStorage.getItem(REGION_KEY) || "EUROPE";
+    const isDemo = localStorage.getItem(DEMO_KEY) !== "false";
+    const autoConnect = localStorage.getItem(AUTOCONNECT_KEY) === "true";
+    return { token, region, isDemo, autoConnect };
+  } catch {
+    return null;
+  }
+}
+
 export default function LoginScreen() {
   // Lazily create socket singleton on mount so emit/listen works.
   const socket = ensureExpertSocket();
 
-  const [token, setToken] = useState("");
-  const [region, setRegion] = useState("EUROPE");
-  const [isDemo, setIsDemo] = useState(true);
+  // Lazy initializers read localStorage once on first render (SSR-safe).
+  const [token, setToken] = useState(() => loadSaved()?.token ?? "");
+  const [region, setRegion] = useState(() => loadSaved()?.region ?? "EUROPE");
+  const [isDemo, setIsDemo] = useState(() => loadSaved()?.isDemo ?? true);
+  const [autoConnect, setAutoConnect] = useState(
+    () => loadSaved()?.autoConnect ?? false
+  );
   const [showToken, setShowToken] = useState(false);
 
   const connecting = useExpertStore((s) => s.connecting);
   const connectionError = useExpertStore((s) => s.connectionError);
 
+  // Persist token/region/isDemo/autoConnect whenever they change.
+  useEffect(() => {
+    try {
+      if (token) localStorage.setItem(TOKEN_KEY, token);
+      else localStorage.removeItem(TOKEN_KEY);
+      localStorage.setItem(REGION_KEY, region);
+      localStorage.setItem(DEMO_KEY, String(isDemo));
+      localStorage.setItem(AUTOCONNECT_KEY, String(autoConnect));
+    } catch {}
+  }, [token, region, isDemo, autoConnect]);
+
+  // Auto-connect on first mount if a saved token + autoConnect flag exist.
+  // Skip if the user explicitly disconnected this session (sessionStorage flag).
+  const didAutoConnect = useRef(false);
+  useEffect(() => {
+    if (didAutoConnect.current) return;
+    didAutoConnect.current = true;
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("expertbot.skipAuto")) {
+      sessionStorage.removeItem("expertbot.skipAuto");
+      return;
+    }
+    const s = loadSaved();
+    if (s?.token && s.autoConnect && !connecting) {
+      useExpertStore.getState().setConnecting(true);
+      useExpertStore.getState().setConnectionError(null);
+      useExpertStore.getState().setRegion(s.region);
+      socket.emit("expert:connect", {
+        token: s.token,
+        region: s.region,
+        isDemo: s.isDemo,
+      });
+    }
+  }, [socket, connecting]);
+
   // Reset transient error only when the USER edits the token/region
-  // (not on remount — remount happens after a failed connect attempt and
-  // would otherwise wipe the error message before the user sees it).
   const prevInputs = useRef({ token, region });
   useEffect(() => {
     if (
@@ -66,6 +122,20 @@ export default function LoginScreen() {
       region,
       isDemo,
     });
+  };
+
+  const handleClearSaved = () => {
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(REGION_KEY);
+      localStorage.removeItem(DEMO_KEY);
+      localStorage.removeItem(AUTOCONNECT_KEY);
+    } catch {}
+    setToken("");
+    setAutoConnect(false);
+    setRegion("EUROPE");
+    setIsDemo(true);
+    useExpertStore.getState().setConnectionError(null);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -100,10 +170,22 @@ export default function LoginScreen() {
             <div className="space-y-5">
               {/* Token */}
               <div className="space-y-2">
-                <Label htmlFor="token" className="text-zinc-200">
-                  <KeyRound className="size-4 text-emerald-400" />
-                  رمز الجلسة (Token)
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="token" className="text-zinc-200">
+                    <KeyRound className="size-4 text-emerald-400" />
+                    رمز الجلسة (Token)
+                  </Label>
+                  {token && (
+                    <button
+                      type="button"
+                      onClick={handleClearSaved}
+                      className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-red-300 transition"
+                    >
+                      <Trash2 className="size-3" />
+                      مسح المحفوظ
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <Input
                     id="token"
@@ -112,7 +194,7 @@ export default function LoginScreen() {
                     onChange={(e) => setToken(e.target.value)}
                     onKeyDown={onKeyDown}
                     placeholder="ألصق رمز جلسة Expert Option هنا"
-                    className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 pr-10"
+                    className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 pr-10 h-11"
                     autoComplete="off"
                     spellCheck={false}
                     dir="ltr"
@@ -126,18 +208,62 @@ export default function LoginScreen() {
                     {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  طريقة الحصول على الرمز: افتح{" "}
-                  <code className="rounded bg-white/5 px-1 py-0.5 text-zinc-300">
-                    app.expertoption.com
-                  </code>{" "}
-                  → DevTools (F12) → Network → WS → اختر اتصال WebSocket → انسخ قيمة{" "}
-                  <code className="rounded bg-white/5 px-1 py-0.5 text-zinc-300">
-                    token
-                  </code>{" "}
-                  من الرسائل.
-                </p>
+                {token ? (
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
+                    <CheckCircle2 className="size-3" />
+                    <span>تم حفظ الرمز محلياً على هذا الجهاز</span>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-zinc-500 leading-relaxed">
+                    طريقة الحصول على الرمز: افتح{" "}
+                    <code className="rounded bg-white/5 px-1 py-0.5 text-zinc-300">
+                      app.expertoption.com
+                    </code>{" "}
+                    على المتصفح → DevTools (F12) → Network → WS → انسخ قيمة{" "}
+                    <code className="rounded bg-white/5 px-1 py-0.5 text-zinc-300">token</code>.
+                  </p>
+                )}
               </div>
+
+              {/* Auto-connect toggle */}
+              <label
+                htmlFor="autoconnect"
+                className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
+                  autoConnect
+                    ? "border-emerald-500/40 bg-emerald-500/[0.08]"
+                    : "border-white/10 bg-black/30"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Zap
+                    className={`size-4 ${autoConnect ? "text-emerald-400" : "text-zinc-500"}`}
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-zinc-100">
+                      اتصال تلقائي عند الفتح
+                    </div>
+                    <div className="text-[11px] text-zinc-400">
+                      حفظ الرمز والاتصال آلياً في الزيارة التالية
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  id="autoconnect"
+                  aria-checked={autoConnect}
+                  onClick={() => setAutoConnect((v) => !v)}
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                    autoConnect ? "bg-emerald-500" : "bg-zinc-700"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-all ${
+                      autoConnect ? "left-0.5" : "left-[22px]"
+                    }`}
+                  />
+                </button>
+              </label>
 
               {/* Region */}
               <div className="space-y-2">

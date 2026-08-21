@@ -211,3 +211,42 @@ Stage Summary:
 - The frontend provides a full trading dashboard: login (token+region+demo/real), live candlestick chart, bot control (4 strategies: alligator/rsi/ma_cross/trend, martingale, max trades), open positions, activity log, trade history, stats.
 - VERIFIED: The Expert Option server accepts the WS handshake with this protocol. A valid token will sustain the connection and stream live market data + execute real trades.
 - To use: user provides their real Expert Option session token (from browser DevTools → Network → WS). Default is demo mode (is_demo=1) for safety.
+
+---
+Task ID: 4
+Agent: orchestrator (main) — mobile-first + auto-token
+Task: Redesign for mobile + add automatic token save/connect
+
+Work Log:
+- Added localStorage persistence for token/region/isDemo/autoConnect in LoginScreen
+  - Lazy useState initializers read localStorage once (SSR-safe, lint-clean)
+  - useEffect persists on every change
+  - "اتصال تلقائي عند الفتح" toggle (custom switch) — when on, auto-connects on next visit
+  - "مسح المحفوظ" button to clear saved credentials
+  - sessionStorage flag "expertbot.skipAuto" set on explicit disconnect → prevents auto-connect from immediately refiring after logout
+- Redesigned page.tsx as mobile-first with bottom tab bar:
+  - 4 tabs: تداول (trade) / البوت (bot) / الصفقات (positions) / السجل (history)
+  - Trade tab: compact 2x2 stats + asset selector + chart + amount/expiry + big CALL/PUT buttons (h-16, thumb-friendly)
+  - Bottom nav fixed on mobile, sticky on desktop, max-w-3xl centered
+  - pb-24 on main to clear bottom bar
+- Made DashboardHeader responsive (h-12 mobile, compact status dot + demo badge inline, mobile balance pill)
+- Made StatsCards responsive (smaller text/cards on mobile)
+- Lint clean (0 errors)
+
+Verification (agent-browser, viewport 390x844 mobile + 1280x800 desktop):
+- Login screen renders with new auto-connect toggle + saved-token indicator ✓
+- Filled token "my-test-token-mobile", enabled auto-connect, connected ✓
+- localStorage persisted: token, region=EUROPE, autoconnect=true ✓
+- Dashboard appeared on mobile: compact header (logo+status+balance), 2x2 stats, asset selector, chart, amount/expiry, big CALL/PUT buttons, bottom tab bar ✓
+- Reloaded page → auto-connect fired automatically using saved token (service log confirmed expert:connect) ✓
+- Explicit disconnect → skipAuto flag prevents re-auto-connect ✓
+- "مسح المحفوظ" button clears localStorage ✓
+- Desktop (1280px): centered max-w-3xl layout with bottom tab bar — clean and usable ✓
+- No console errors ✓
+
+Stage Summary:
+- DONE. ExpertBot Live is now mobile-first with automatic token handling.
+- User enters token once → it's saved → on next visit, auto-connects (if toggle on).
+- Mobile layout: bottom tab bar (تداول/البوت/الصفقات/السجل), big touch-friendly trade buttons, compact header.
+- Desktop: same tab bar but centered max-w-3xl, works great too.
+- The Expert Option WS protocol connection still works (verified earlier: handshake succeeds, server rejects fake tokens as expected).

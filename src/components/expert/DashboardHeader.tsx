@@ -40,6 +40,10 @@ export default function DashboardHeader() {
   const region = regionKey ? REGIONS[regionKey] : null;
 
   const handleDisconnect = () => {
+    // Prevent auto-connect from immediately refiring after an explicit logout.
+    try {
+      sessionStorage.setItem("expertbot.skipAuto", "1");
+    } catch {}
     const socket = getExpertSocket();
     socket?.emit("expert:disconnect");
     useExpertStore.getState().reset();
@@ -47,40 +51,42 @@ export default function DashboardHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0a0e14]/90 backdrop-blur-xl">
-      <div className="flex h-14 items-center justify-between gap-3 px-4">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/30">
-            <Bot className="size-5 text-emerald-400" />
+      <div className="flex h-12 lg:h-14 items-center justify-between gap-2 px-3 lg:px-4">
+        {/* Logo + compact status */}
+        <div className="flex items-center gap-2">
+          <div className="flex size-8 lg:size-9 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/30">
+            <Bot className="size-4 lg:size-5 text-emerald-400" />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-bold">
-              Expert<span className="text-emerald-400">Bot</span> Live
+            <span className="text-xs lg:text-sm font-bold">
+              Expert<span className="text-emerald-400">Bot</span>
             </span>
-            <span className="text-[10px] text-zinc-500">منصة تداول آلية</span>
+            <div className="flex items-center gap-1">
+              <span
+                className={`size-1.5 rounded-full ${
+                  connected
+                    ? "bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)]"
+                    : "bg-red-400 animate-pulse"
+                }`}
+              />
+              <span className="text-[9px] lg:text-[10px] text-zinc-500">
+                {connected ? "متصل" : "غير متصل"}
+              </span>
+              <span
+                className={`ml-1 rounded px-1 text-[9px] ${
+                  isDemo
+                    ? "bg-sky-500/15 text-sky-300"
+                    : "bg-red-500/15 text-red-300"
+                }`}
+              >
+                {isDemo ? "تجريبي" : "حقيقي"}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Status indicators */}
+        {/* Desktop status indicators */}
         <div className="hidden md:flex items-center gap-2">
-          {/* Connection */}
-          <div
-            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-              connected
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                : "border-red-500/30 bg-red-500/10 text-red-300"
-            }`}
-          >
-            <span
-              className={`size-1.5 rounded-full ${
-                connected
-                  ? "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
-                  : "bg-red-400 animate-pulse"
-              }`}
-            />
-            {connected ? "متصل" : "غير متصل"}
-          </div>
-
           {/* Bot status */}
           <Badge
             variant="outline"
@@ -94,18 +100,6 @@ export default function DashboardHeader() {
             {botRunning ? "البوت يعمل" : "البوت متوقف"}
           </Badge>
 
-          {/* Account type */}
-          <Badge
-            variant="outline"
-            className={`gap-1 ${
-              isDemo
-                ? "border-sky-500/40 bg-sky-500/10 text-sky-300"
-                : "border-red-500/40 bg-red-500/10 text-red-300"
-            }`}
-          >
-            {isDemo ? "🧪 تجريبي" : "💰 حقيقي"}
-          </Badge>
-
           {/* Balance */}
           <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
             <Wallet className="size-3.5 text-emerald-400" />
@@ -116,12 +110,20 @@ export default function DashboardHeader() {
           </div>
         </div>
 
+        {/* Mobile balance (compact) */}
+        <div className="flex md:hidden items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/[0.07] px-2 py-0.5">
+          <Wallet className="size-3 text-emerald-400" />
+          <span className="font-mono text-[11px] font-semibold text-emerald-300">
+            {formatPrice(balance, 0)}
+          </span>
+        </div>
+
         {/* Account dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="gap-2 px-2 hover:bg-white/5"
+              className="gap-1.5 px-1.5 lg:px-2 hover:bg-white/5"
               size="sm"
             >
               <Avatar className="size-7 ring-1 ring-white/10">
@@ -129,9 +131,6 @@ export default function DashboardHeader() {
                   {name ? name.charAt(0).toUpperCase() : "EO"}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden sm:inline text-xs text-zinc-300 max-w-[120px] truncate">
-                {name ?? "حساب Expert Option"}
-              </span>
               <ChevronDown className="size-3.5 text-zinc-500" />
             </Button>
           </DropdownMenuTrigger>
