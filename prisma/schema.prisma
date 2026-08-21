@@ -1,4 +1,5 @@
-// ExpertBot Pro — automated trading bot simulator schema
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -9,55 +10,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Account {
-  id            String      @id @default(cuid())
-  email         String      @unique
-  platformToken String
-  accountType   String      @default("demo") // demo | real
-  balance       Float       @default(10000)
-  currency      String      @default("USD")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  trades        Trade[]
-  botConfigs    BotConfig[]
-}
-
-model Trade {
-  id         String   @id @default(cuid())
-  accountId  String
-  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  pair       String
-  direction  String // CALL | PUT
-  amount     Float
-  entryPrice Float
-  exitPrice  Float?
-  expirySec  Int
-  status     String   @default("open") // open | won | lost | tie
-  payout     Float?
-  profit     Float?
-  openedAt   DateTime @default(now())
-  closedAt   DateTime?
-  source     String   @default("manual") // manual | bot
-  strategy   String?
-
-  @@index([accountId])
-  @@index([status])
-}
-
-model BotConfig {
-  id           String   @id @default(cuid())
-  accountId    String
-  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  strategy     String // ma_cross | rsi | trend | martingale
-  pair         String
-  amount       Float
-  expirySec    Int
-  martingale   Boolean  @default(false)
-  mgMultiplier Float    @default(2)
-  maxTrades    Int      @default(0) // 0 = unlimited
-  active       Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@index([accountId])
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
