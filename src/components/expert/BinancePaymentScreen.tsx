@@ -17,36 +17,58 @@ import {
 import { Button } from "@/components/ui/button";
 import { useExpertStore } from "@/lib/expert-store";
 
-const BINANCE_WALLET = "0x4f3e8d9a2b1c7e5f6d8a9b0c1e2d3f4a5b6c7d8e";
-const NETWORK = "BEP20 (BSC)";
+// ===== إعدادات الدفع =====
+const WALLETS = {
+  BEP20: {
+    label: "BEP20 (BSC)",
+    address: "0x01338E0788D52C0cA35C36aB7281Cf3e6B4780Bd",
+    short: "0x0133...80Bd",
+    color: "#fbbf24", // amber
+    desc: "شبكة Binance Smart Chain — رسوم منخفضة",
+  },
+  TRC20: {
+    label: "TRC20 (Tron)",
+    address: "TGGsJVHMbWwXmzNNXcrhmeHMd7Z3w8t5dx",
+    short: "TGGs...t5dx",
+    color: "#ef4444", // red
+    desc: "شبكة Tron — رسوم منخفضة جداً",
+  },
+} as const;
+
 const AMOUNT_USD = 150;
 const TELEGRAM = "@ALFa_proo";
 const TELEGRAM_URL = "https://t.me/ALFa_proo";
+
+type Network = keyof typeof WALLETS;
 
 export default function BinancePaymentScreen() {
   const setPaid = useExpertStore((s) => s.setPaid);
   const setActivated = useExpertStore((s) => s.setActivated);
 
+  const [network, setNetwork] = useState<Network>("BEP20");
   const [qrUrl, setQrUrl] = useState("");
-  const [copied, setCopied] = useState<"wallet" | "amount" | null>(null);
+  const [copied, setCopied] = useState(false);
   const [step, setStep] = useState<"instructions" | "sent">("instructions");
 
-  // Generate QR code for the wallet address on mount
+  const wallet = WALLETS[network];
+
+  // Regenerate QR code when network changes
   useEffect(() => {
-    QRCode.toDataURL(BINANCE_WALLET, {
+    QRCode.toDataURL(wallet.address, {
       width: 220,
       margin: 1,
-      color: { dark: "#0a0e14", light: "#fbbf24" },
+      color: { dark: "#0a0e14", light: wallet.color },
     }).then(setQrUrl).catch(() => {});
-  }, []);
+  }, [network, wallet.address, wallet.color]);
 
-  const copy = (text: string, what: "wallet" | "amount") => {
-    navigator.clipboard?.writeText(text).then(() => {
-      setCopied(what);
-      setTimeout(() => setCopied(null), 2000);
+  const copyAddress = () => {
+    navigator.clipboard?.writeText(wallet.address).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
   };
 
+  // === Waiting screen ===
   if (step === "sent") {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[#0a0e14] text-zinc-100 flex items-center justify-center px-4 py-8">
@@ -69,7 +91,7 @@ export default function BinancePaymentScreen() {
             </div>
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-zinc-400">الشبكة:</span>
-              <span className="font-mono text-amber-300">{NETWORK}</span>
+              <span className="font-mono text-amber-300">{wallet.label}</span>
             </div>
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-zinc-400">الحالة:</span>
@@ -102,6 +124,7 @@ export default function BinancePaymentScreen() {
     );
   }
 
+  // === Payment instructions screen ===
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0a0e14] text-zinc-100">
       <div className="pointer-events-none absolute inset-0 activation-grid-bg" />
@@ -133,27 +156,61 @@ export default function BinancePaymentScreen() {
               <div className="mt-1 text-[10px] text-zinc-500">≈ {AMOUNT_USD} دولار أمريكي</div>
             </div>
 
+            {/* Network selector */}
+            <div className="space-y-2">
+              <label className="text-[11px] text-zinc-400">اختر الشبكة</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(WALLETS) as Network[]).map((net) => {
+                  const w = WALLETS[net];
+                  const active = network === net;
+                  return (
+                    <button
+                      key={net}
+                      onClick={() => setNetwork(net)}
+                      className={`rounded-xl border p-3 text-right transition ${
+                        active
+                          ? "border-amber-500/50 bg-amber-500/10"
+                          : "border-white/10 bg-black/30 hover:border-white/20"
+                      }`}
+                    >
+                      <div className={`text-[13px] font-bold ${active ? "text-amber-300" : "text-zinc-300"}`}>
+                        {w.label}
+                      </div>
+                      <div className="text-[10px] text-zinc-500 mt-0.5">{w.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Wallet address */}
             <div className="space-y-2">
               <label className="flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">عنوان محفظة Binance (USDT)</span>
-                <span className="flex items-center gap-1 text-amber-300">
-                  <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold">{NETWORK}</span>
+                <span className="text-zinc-400">عنوان المحفظة ({wallet.label})</span>
+                <span
+                  className="rounded px-1.5 py-0.5 text-[9px] font-bold"
+                  style={{ background: `${wallet.color}20`, color: wallet.color }}
+                >
+                  {wallet.label}
                 </span>
               </label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 truncate rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 font-mono text-[11px] text-amber-300" dir="ltr">
-                  {BINANCE_WALLET}
+                <code
+                  className="flex-1 truncate rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 font-mono text-[11px]"
+                  style={{ color: wallet.color }}
+                  dir="ltr"
+                >
+                  {wallet.address}
                 </code>
                 <button
-                  onClick={() => copy(BINANCE_WALLET, "wallet")}
+                  onClick={copyAddress}
                   className="shrink-0 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-amber-300 hover:bg-amber-500/20 transition"
                   title="نسخ العنوان"
                 >
-                  {copied === "wallet" ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+                  {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
                 </button>
               </div>
-              {copied === "wallet" && (
+              {copied && (
                 <div className="text-[10px] text-emerald-400 flex items-center gap-1">
                   <CheckCircle2 className="size-3" /> تم نسخ العنوان
                 </div>
@@ -165,15 +222,18 @@ export default function BinancePaymentScreen() {
               {qrUrl ? (
                 <img
                   src={qrUrl}
-                  alt="Wallet QR"
-                  className="rounded-xl border-4 border-amber-400"
+                  alt={`QR ${wallet.label}`}
+                  className="rounded-xl border-4"
+                  style={{ borderColor: wallet.color }}
                   width={180}
                   height={180}
                 />
               ) : (
                 <div className="size-44 animate-pulse rounded-xl bg-amber-500/10" />
               )}
-              <p className="text-[10px] text-zinc-500">امسح الـ QR من تطبيق Binance للتحويل السريع</p>
+              <p className="text-[10px] text-zinc-500">
+                امسح الـ QR من تطبيق Binance للتحويل السريع ({wallet.label})
+              </p>
             </div>
 
             {/* Network warning */}
@@ -181,7 +241,7 @@ export default function BinancePaymentScreen() {
               <AlertCircle className="size-4 shrink-0 mt-0.5 text-red-400" />
               <div className="text-[11px] leading-relaxed text-red-200">
                 <strong>تحذير مهم:</strong> تأكد من اختيار شبكة{" "}
-                <strong className="text-red-300">{NETWORK}</strong> عند التحويل.
+                <strong className="text-red-300">{wallet.label}</strong> عند التحويل.
                 التحويل لشبكة خاطئة سيؤدي لفقدان المبلغ!
               </div>
             </div>
@@ -199,7 +259,7 @@ export default function BinancePaymentScreen() {
                 </li>
                 <li className="flex gap-2">
                   <span className="font-bold text-emerald-400 shrink-0">٢.</span>
-                  <span>اختر شبكة <strong className="text-amber-300">{NETWORK}</strong> والصق عنوان المحفظة بالأعلى</span>
+                  <span>اختر شبكة <strong style={{ color: wallet.color }}>{wallet.label}</strong> والصق عنوان المحفظة بالأعلى</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="font-bold text-emerald-400 shrink-0">٣.</span>
