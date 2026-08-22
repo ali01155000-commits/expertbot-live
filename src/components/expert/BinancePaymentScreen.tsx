@@ -119,6 +119,14 @@ export default function BinancePaymentScreen() {
             <ArrowLeft className="size-3" />
             العودة للتعليمات
           </button>
+
+          <button
+            onClick={() => setPaid(true)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-[12px] font-bold text-black hover:bg-emerald-400 transition mx-auto"
+          >
+            <CheckCircle2 className="size-4" />
+            تم التأكيد — متابعة لإدخال الكود
+          </button>
         </div>
       </div>
     );
@@ -301,7 +309,10 @@ export default function BinancePaymentScreen() {
                 رجوع
               </button>
               <button
-                onClick={() => setStep("sent")}
+                onClick={() => {
+                  setPaid(true);
+                  setStep("sent");
+                }}
                 className="flex-1 rounded-xl bg-emerald-500 px-4 py-2.5 text-[12px] font-bold text-black hover:bg-emerald-400 transition flex items-center justify-center gap-1.5"
               >
                 <ImageIcon className="size-3.5" />

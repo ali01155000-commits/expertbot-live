@@ -43,14 +43,14 @@ export default function Home() {
   const paid = useExpertStore((s) => s.paid);
   const [tab, setTab] = useState<Tab>("trade");
 
-  // بوابة التفعيل: يجب إدخال كود تفعيل صالح أولاً
-  if (!activated) {
-    return <ActivationScreen />;
-  }
-
-  // بوابة الدفع: يجب دفع اشتراك 150$ قبل استخدام البوت
+  // بوابة الدفع: يجب دفع اشتراك 150$ أولاً (قبل الحصول على الكود)
   if (!paid) {
     return <BinancePaymentScreen />;
+  }
+
+  // بوابة التفعيل: بعد الدفع، أدخل كود التفعيل
+  if (!activated) {
+    return <ActivationScreen />;
   }
 
   if (!connected) {
