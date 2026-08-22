@@ -181,6 +181,17 @@ export default function DashboardHeader() {
               <LogOut className="size-4" />
               قطع الاتصال
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                useExpertStore.getState().setActivated(false);
+                useExpertStore.getState().setActivationCode(null);
+                useExpertStore.getState().reset();
+              }}
+              className="cursor-pointer text-amber-300 hover:text-amber-200 focus:bg-amber-500/10 focus:text-amber-200"
+            >
+              <LogOut className="size-4" />
+              إلغاء التفعيل (خروج نهائي)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

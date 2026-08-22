@@ -215,6 +215,10 @@ export function getExpertSocket(): Socket | null {
 // ---------------------------------------------------------------------------
 
 interface ExpertState {
+  // Activation code state
+  activated: boolean;
+  activationCode: string | null;
+
   // socket.io client (kept here for API completeness; do not subscribe to it
   // in components — use useExpertSocket()/getExpertSocket() instead).
   socket: ExpertSocketType | null;
@@ -244,6 +248,8 @@ interface ExpertState {
 }
 
 interface ExpertActions {
+  setActivated: (v: boolean) => void;
+  setActivationCode: (c: string | null) => void;
   setSocket: (s: ExpertSocketType | null) => void;
   setConnected: (v: boolean) => void;
   setConnecting: (v: boolean) => void;
@@ -269,6 +275,8 @@ type ExpertStoreApi = {
 type ExpertStore = ExpertState & ExpertActions;
 
 const initialState: ExpertState = {
+  activated: false,
+  activationCode: null,
   socket: null,
   connected: false,
   connecting: false,
@@ -288,8 +296,31 @@ const initialState: ExpertState = {
 };
 
 export const useExpertStore = create<ExpertStore>((set) => ({
-  ...initialState,
+  // استرجع حالة التفعيل من localStorage (client-side)
+  activated:
+    typeof window !== "undefined" && !!localStorage.getItem("expertbot.activation"),
+  activationCode:
+    typeof window !== "undefined"
+      ? localStorage.getItem("expertbot.activation") || null
+      : null,
+  socket: null,
 
+  setActivated: (v) => {
+    set({ activated: v });
+    if (!v) {
+      try {
+        localStorage.removeItem("expertbot.activation");
+      } catch {}
+    }
+  },
+  setActivationCode: (c) => {
+    set({ activationCode: c });
+    if (c) {
+      try {
+        localStorage.setItem("expertbot.activation", c);
+      } catch {}
+    }
+  },
   setSocket: (s) => set({ socket: s }),
 
   setConnected: (v) => set({ connected: v }),
@@ -355,6 +386,9 @@ export const useExpertStore = create<ExpertStore>((set) => ({
   reset: () =>
     set({
       ...initialState,
+      // احتفظ بحالة التفعيل (لا ينسى الكود عند قطع الاتصال)
+      activated: useExpertStore.getState().activated,
+      activationCode: useExpertStore.getState().activationCode,
       socket: useExpertStore.getState().socket,
     }),
 }));
