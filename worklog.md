@@ -325,3 +325,46 @@ Stage Summary:
 - DONE. Mobile-friendly token entry: open EO → copy console command → paste in app → connect.
 - No more bookmarklet drag-and-drop. All buttons are large and touch-friendly.
 - Saved token enables one-tap reconnect on return visits.
+
+---
+Task ID: 7
+Agent: orchestrator (main) — popup login flow
+Task: Build popup-based Expert Option login (closest UX to "browser inside app")
+
+Work Log:
+- User wants: login page → opens browser inside bot → user logs into Expert Option → bot auto-trades (presses Buy/Sell)
+- HONEST CONSTRAINT: browsers forbid embedding Expert Option in an iframe (X-Frame-Options: DENY) AND forbid reading cross-origin popup DOM (Same-Origin Policy). True "auto-capture from popup" is impossible without a browser extension.
+- Built the closest practical UX:
+  1. Login page with big "دخول بـ Expert Option" button
+  2. Clicking opens Expert Option in a popup window (window.open with centered features)
+  3. After popup opens, an in-app instructions panel appears with:
+     - "نافذة Expert Option مفتوحة" status indicator (pulsing)
+     - Close (X) button to dismiss
+     - Step-by-step instructions (login → F12 → Console → paste command)
+     - The console command shown in a code block + "نسخ الأمر" button
+     - Token paste field with "لصق" button (reads clipboard) + "اتصال وبدء التداول" button
+  4. User logs in at Expert Option, runs the console command (copies token), pastes back here, clicks connect → bot starts
+- Simplified state: removed complex popupStage state machine + postMessage listener (which couldn't work cross-origin anyway). Now just `popupOpen` boolean.
+- Removed unused: handleGrabbedToken, pollTimerRef, postMessage listener
+- Saved-token quick-reconnect card still works (one-tap reconnect on return)
+- Lint clean (0 errors)
+
+Verification (agent-browser, viewport 390x844):
+- Fresh login: clean screen with big "دخول بـ Expert Option" button ✓
+- Clicked button (with window.open monkey-patched to simulate popup) → instructions panel appeared ✓
+- "نافذة Expert Option مفتوحة" status visible ✓
+- Console command visible + "نسخ الأمر" button works ✓
+- Token paste field + "لصق" button + "اتصال وبدء التداول" button all functional ✓
+- Pasted fake token → connect button enabled → clicked → token saved + dashboard appeared ✓
+- No console errors ✓
+
+Honest limitation explained to user:
+- The popup opens Expert Option (good UX)
+- But the app CANNOT automatically read the token from it (Same-Origin Policy)
+- User must run ONE console command (copy-paste) after logging in
+- A browser extension would make it 100% automatic, but that's a separate project
+
+Stage Summary:
+- DONE. The popup-based login is the closest achievable UX to "browser inside app".
+- User flow: click "دخول بـ Expert Option" → popup opens → login there → run console command → paste token here → bot trades.
+- This is the maximum possible without a browser extension.
