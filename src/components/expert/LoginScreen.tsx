@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import QRCode from "qrcode";
 import {
   Bot,
+  BookOpen,
   CheckCircle2,
   Download,
   ExternalLink,
@@ -100,6 +101,7 @@ export default function LoginScreen() {
   const [extDetected, setExtDetected] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [manualToken, setManualToken] = useState("");
   const [copied, setCopied] = useState(false);
@@ -267,6 +269,13 @@ export default function LoginScreen() {
                 بوت تداول Expert Option الآلي
               </p>
             </div>
+            <button
+              onClick={() => setGuideOpen(true)}
+              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/[0.06] px-4 py-1.5 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/15 transition"
+            >
+              <BookOpen className="size-3.5" />
+              دليل التثبيت الكامل
+            </button>
           </div>
 
           {mounted && (
@@ -499,6 +508,14 @@ export default function LoginScreen() {
         <QRModal
           qrDataUrl={qrDataUrl}
           onClose={() => setQrOpen(false)}
+        />
+      )}
+
+      {/* === Full installation guide modal === */}
+      {guideOpen && (
+        <GuideModal
+          extensionUrl={process.env.NEXT_PUBLIC_EXTENSION_URL || "/extension.zip"}
+          onClose={() => setGuideOpen(false)}
         />
       )}
 
@@ -913,6 +930,527 @@ function QRModal({ qrDataUrl, onClose }: { qrDataUrl: string; onClose: () => voi
             <li>• الـ QR صالح لمدة جلسة Expert Option — إذا انتهت الجلسة، كرّر العملية</li>
           </ul>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Guide Modal — full step-by-step installation + bot usage guide     */
+/* ================================================================== */
+function GuideModal({
+  extensionUrl,
+  onClose,
+}: {
+  extensionUrl: string;
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<"extension" | "bot">("extension");
+  const [browser, setBrowser] = useState<"chrome" | "firefox">("chrome");
+  const [copied, setCopied] = useState(false);
+
+  const copyExtUrl = () => {
+    const url =
+      typeof window !== "undefined" ? window.location.origin + extensionUrl : extensionUrl;
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-[#0a0e14]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-[#0a0e14]/95 px-5 py-3 backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <BookOpen className="size-5 text-emerald-400" />
+            <h3 className="text-sm font-bold text-zinc-100">
+              دليل التثبيت والاستخدام
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-zinc-400 hover:bg-white/5 hover:text-zinc-200 transition"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-white/10 px-5 pt-3">
+          <button
+            onClick={() => setTab("extension")}
+            className={`flex items-center gap-1.5 rounded-t-lg px-4 py-2 text-[12px] font-medium transition ${
+              tab === "extension"
+                ? "border-b-2 border-emerald-400 text-emerald-300"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Puzzle className="size-3.5" />
+            ١. تثبيت الإضافة
+          </button>
+          <button
+            onClick={() => setTab("bot")}
+            className={`flex items-center gap-1.5 rounded-t-lg px-4 py-2 text-[12px] font-medium transition ${
+              tab === "bot"
+                ? "border-b-2 border-emerald-400 text-emerald-300"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Bot className="size-3.5" />
+            ٢. تشغيل البوت
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="max-h-[calc(92vh-100px)] overflow-y-auto p-5">
+          {tab === "extension" ? (
+            <ExtensionGuide
+              browser={browser}
+              setBrowser={setBrowser}
+              extensionUrl={extensionUrl}
+              copied={copied}
+              onCopy={copyExtUrl}
+            />
+          ) : (
+            <BotGuide />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --- Extension installation guide --- */
+function ExtensionGuide({
+  browser,
+  setBrowser,
+  extensionUrl,
+  copied,
+  onCopy,
+}: {
+  browser: "chrome" | "firefox";
+  setBrowser: (b: "chrome" | "firefox") => void;
+  extensionUrl: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Intro */}
+      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-3">
+        <p className="text-[12px] leading-relaxed text-emerald-200/90">
+          🤖 <strong>الإضافة</strong> أداة صغيرة تُثبّت على متصفحك. وظيفتها: التقاط
+          جلسة Expert Option تلقائياً عند تسجيل دخولك، وفتح البوت جاهزاً للتداول —{" "}
+          <strong>بدون نسخ أو لصق</strong>.
+        </p>
+      </div>
+
+      {/* Step 1: download */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ١
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">حمّل ملف الإضافة</h4>
+        </div>
+        <div className="ms-9 space-y-2">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            اضغط الزر لتحميل <code className="rounded bg-white/5 px-1 text-emerald-300">extension.zip</code>:
+          </p>
+          <div className="flex items-center gap-2">
+            <a
+              href={extensionUrl}
+              download
+              target={extensionUrl.startsWith("http") ? "_blank" : undefined}
+              rel={extensionUrl.startsWith("http") ? "noreferrer" : undefined}
+              className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+            >
+              <Download className="size-3.5" />
+              تحميل extension.zip
+            </a>
+            <button
+              onClick={onCopy}
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[11px] text-zinc-400 hover:text-zinc-200 transition"
+            >
+              {copied ? "✓ نُسخ" : "نسخ الرابط"}
+            </button>
+          </div>
+          <p className="text-[10px] text-zinc-500">الملف ~7KB — آمن ومفتوح المصدر</p>
+        </div>
+      </div>
+
+      {/* Step 2: unzip */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ٢
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">فك ضغط الملف</h4>
+        </div>
+        <div className="ms-9">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            اضغط بالزر الأيمن على <code className="rounded bg-white/5 px-1">extension.zip</code> ←
+            «استخراج الكل» (Extract All). ستحصل على مجلد{" "}
+            <code className="rounded bg-white/5 px-1">extension/</code>.
+          </p>
+        </div>
+      </div>
+
+      {/* Step 3: browser-specific install */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ٣
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">ثبّت الإضافة على متصفحك</h4>
+        </div>
+
+        <div className="ms-9">
+          <div className="mb-3 flex gap-2">
+            <button
+              onClick={() => setBrowser("chrome")}
+              className={`flex-1 rounded-lg border px-3 py-2 text-[12px] font-medium transition ${
+                browser === "chrome"
+                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+                  : "border-white/10 bg-black/30 text-zinc-400"
+              }`}
+            >
+              Chrome / Edge
+            </button>
+            <button
+              onClick={() => setBrowser("firefox")}
+              className={`flex-1 rounded-lg border px-3 py-2 text-[12px] font-medium transition ${
+                browser === "firefox"
+                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+                  : "border-white/10 bg-black/30 text-zinc-400"
+              }`}
+            >
+              Firefox
+            </button>
+          </div>
+
+          {browser === "chrome" ? (
+            <ol className="space-y-2.5 text-[11px] leading-relaxed text-zinc-300">
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.1</span>
+                <span>
+                  افتح المتصفح واذهب للعنوان:{" "}
+                  <code className="rounded bg-white/5 px-1 text-emerald-300" dir="ltr">
+                    chrome://extensions
+                  </code>
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.2</span>
+                <span>
+                  في أعلى يمين الصفحة، فعّل المفتاح{" "}
+                  <strong className="text-emerald-300">«Developer mode»</strong>
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.3</span>
+                <span>
+                  سيظهر زر <strong className="text-emerald-300">«Load unpacked»</strong>{" "}
+                  في أعلى اليسار — اضغطه
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.4</span>
+                <span>
+                  اختر مجلد <code className="rounded bg-white/5 px-1">extension/</code> الذي
+                  فككت ضغطه
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.5</span>
+                <span>
+                  ✅ ستظهر الإضافة! ثبّتها في شريط المتصفح (انقر 🧩 ← 📌 بجانب ExpertBot)
+                </span>
+              </li>
+            </ol>
+          ) : (
+            <ol className="space-y-2.5 text-[11px] leading-relaxed text-zinc-300">
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.1</span>
+                <span>
+                  افتح Firefox واذهب للعنوان:{" "}
+                  <code className="rounded bg-white/5 px-1 text-emerald-300" dir="ltr">
+                    about:debugging
+                  </code>
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.2</span>
+                <span>
+                  من القائمة اليسرى، اختر <strong className="text-emerald-300">«This Firefox»</strong>
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.3</span>
+                <span>
+                  اضغط زر <strong className="text-emerald-300">«Load Temporary Add-on...»</strong>
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.4</span>
+                <span>
+                  اختر ملف <code className="rounded bg-white/5 px-1">manifest.json</code> داخل
+                  مجلد <code className="rounded bg-white/5 px-1">extension/</code>
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-emerald-400 shrink-0">3.5</span>
+                <span>
+                  ✅ الإضافة مثبّتة! (ملاحظة: Firefox يحذف الإضافات المؤقتة عند الإغلاق)
+                </span>
+              </li>
+            </ol>
+          )}
+        </div>
+      </div>
+
+      {/* Step 4: configure bot URL */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ٤
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">اضبط رابط البوت</h4>
+        </div>
+        <div className="ms-9 space-y-2">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            اضغط أيقونة الإضافة 🤖 في شريح المتصفح ← في حقل{" "}
+            <strong className="text-emerald-300">«رابط التطبيق»</strong>، أدخل:
+          </p>
+          <div className="rounded-lg border border-white/10 bg-black/40 p-2.5">
+            <code className="text-[11px] text-emerald-300" dir="ltr">
+              {typeof window !== "undefined" ? window.location.origin + "/" : "https://your-domain.com/"}
+            </code>
+          </div>
+          <p className="text-[10px] text-zinc-500">يُحفظ تلقائياً ✓ — لا تعديل كود</p>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.08] p-3">
+        <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-400" />
+        <div className="text-[11px] leading-relaxed text-emerald-200">
+          <strong>تم تثبيت الإضافة!</strong> انتقل لتبويب «٢. تشغيل البوت».
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --- Bot usage guide --- */
+function BotGuide() {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-3">
+        <p className="text-[12px] leading-relaxed text-emerald-200/90">
+          🎯 <strong>البوت</strong> يتصل بـ Expert Option وينفّذ صفقات Buy/Sell آلياً
+          حسب الإستراتيجية التي تختارها.
+        </p>
+      </div>
+
+      {/* Step 1 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ١
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">افتح Expert Option وسجّل دخولك</h4>
+        </div>
+        <div className="ms-9 space-y-2">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            اذهب إلى{" "}
+            <a
+              href="https://app.expertoption.com"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-0.5 text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+            >
+              app.expertoption.com
+              <ExternalLink className="size-3" />
+            </a>{" "}
+            وسجّل دخولك كالمعتاد.
+          </p>
+          <div className="flex items-start gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2.5">
+            <span className="text-emerald-400 shrink-0">⚡</span>
+            <p className="text-[11px] leading-relaxed text-emerald-200/90">
+              بمجرد دخولك، الإضافة ستلتقط الجلسة <strong>تلقائياً</strong> وتفتح
+              التطبيق في تبويب جديد!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 2 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ٢
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">التطبيق يفتح تلقائياً</h4>
+        </div>
+        <div className="ms-9">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            سيفتح البوت في تبويب جديد، وسترى لوحة التداول كاملة:
+          </p>
+          <ul className="mt-2 space-y-1 text-[11px] text-zinc-300">
+            <li className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
+              الرصيد الحالي + الإحصائيات
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
+              رسم شموع يابانية حي
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
+              لوحة تحكم البوت + تداول يدوي
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
+              سجل الصفقات + النشاط
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Step 3 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ٣
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">اختر إعدادات البوت</h4>
+        </div>
+        <div className="ms-9 space-y-2">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            في تبويب <strong className="text-emerald-300">«البوت»</strong>:
+          </p>
+          <div className="space-y-1.5 text-[11px] text-zinc-300">
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2">
+              <strong className="text-emerald-300">الإستراتيجية:</strong>{" "}
+              متابعة الاتجاه / RSI / تقاطع المتوسطات / Alligator
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2">
+              <strong className="text-emerald-300">قيمة الرهان:</strong>{" "}
+              المبلغ بالدولار لكل صفقة
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2">
+              <strong className="text-emerald-300">مدة الصفقة:</strong>{" "}
+              15 / 30 / 60 / 120 / 300 ثانية
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2">
+              <strong className="text-emerald-300">مارتينجال:</strong>{" "}
+              (اختياري) مضاعفة الرهان بعد الخسارة
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 4 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ٤
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">شغّل البوت</h4>
+        </div>
+        <div className="ms-9 space-y-2">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            اضغط الزر الأخضر الكبير:{" "}
+            <strong className="text-emerald-300">«▶ تشغيل البوت»</strong>
+          </p>
+          <div className="flex items-start gap-2 rounded-lg border border-violet-500/20 bg-violet-500/[0.05] p-2.5">
+            <span className="text-violet-400 shrink-0">🤖</span>
+            <p className="text-[11px] leading-relaxed text-violet-200/90">
+              سيبدأ البوت بتحليل السوق آلياً. عند ظهور إشارة، سينفّذ صفقة Buy أو Sell{" "}
+              <strong>تلقائياً</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 5 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ٥
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">تداول يدوي (اختياري)</h4>
+        </div>
+        <div className="ms-9">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            في تبويب <strong className="text-emerald-300">«تداول»</strong>، استخدم زرّي:
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-center">
+              <div className="text-[20px]">▲</div>
+              <div className="text-[11px] font-bold text-emerald-300">شراء CALL</div>
+              <div className="text-[9px] text-zinc-500">رهان على الصعود</div>
+            </div>
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-center">
+              <div className="text-[20px]">▼</div>
+              <div className="text-[11px] font-bold text-red-300">بيع PUT</div>
+              <div className="text-[9px] text-zinc-500">رهان على الهبوط</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 6 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+            ٦
+          </span>
+          <h4 className="text-[13px] font-semibold text-zinc-100">راقب الصفقات</h4>
+        </div>
+        <div className="ms-9 space-y-1.5">
+          <ul className="space-y-1 text-[11px] text-zinc-300">
+            <li className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
+              تبويب <strong className="text-emerald-300">«الصفقات»</strong>: المفتوحة بعدّاد تنازلي
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
+              تبويب <strong className="text-emerald-300">«السجل»</strong>: المغلقة + سجل النشاط
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Tips */}
+      <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.08] p-3">
+        <div className="mb-1.5 text-[11px] font-semibold text-amber-200">💡 نصائح مهمة</div>
+        <ul className="space-y-1 text-[10px] leading-relaxed text-amber-100/80">
+          <li>• ابدأ دائماً بالحساب التجريبي (Demo) للتجربة</li>
+          <li>• استخدم رهانات صغيرة (10-25$) في البداية</li>
+          <li>• تابع البوت في أول ساعة لترى كيف يعمل</li>
+          <li>• مارتينجال يضاعف المخاطر — استخدمه بحذر</li>
+          <li>• البوت يعمل 24/7 على السيرفر حتى وأنت نائم</li>
+        </ul>
+      </div>
+
+      <div className="rounded-lg border border-red-500/30 bg-red-500/[0.08] p-3">
+        <div className="mb-1 flex items-center gap-2">
+          <ShieldAlert className="size-4 text-red-400" />
+          <span className="text-[11px] font-semibold text-red-200">⚠️ تنبيه مخاطر</span>
+        </div>
+        <p className="text-[10px] leading-relaxed text-red-100/80">
+          التداول بأموال فعلية يحمل مخاطر مالية كبيرة. قد تخسر رأس مالك بالكامل.
+          استخدم البوت بمسؤوليتك الكاملة.
+        </p>
       </div>
     </div>
   );
