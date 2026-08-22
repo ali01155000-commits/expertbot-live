@@ -250,3 +250,43 @@ Stage Summary:
 - Mobile layout: bottom tab bar (تداول/البوت/الصفقات/السجل), big touch-friendly trade buttons, compact header.
 - Desktop: same tab bar but centered max-w-3xl, works great too.
 - The Expert Option WS protocol connection still works (verified earlier: handshake succeeds, server rejects fake tokens as expected).
+
+---
+Task ID: 5
+Agent: orchestrator (main) — bookmarklet auto-token
+Task: Remove manual token entry; add bookmarklet for automatic token capture from app.expertoption.com
+
+Work Log:
+- HONEST CONSTRAINT explained to user: a web app on origin A CANNOT read localStorage/cookies of origin B (app.expertoption.com) — Same-Origin Policy. True "fully automatic on page visit" is impossible without a browser extension.
+- Built the best available solution: a BOOKMARKLET.
+- Rewrote LoginScreen.tsx:
+  - Removed the manual token input field as the primary method
+  - Added "الحصول التلقائي على التوكن" section (primary) with 3-step instructions:
+    1. Drag the green button to the bookmarks bar
+    2. Log in at app.expertoption.com
+    3. Click the bookmarklet — it captures the token and opens the app ready to connect
+  - Draggable <a> element with a real javascript: href (set via ref+setAttribute to bypass React's javascript:-URL blocking)
+  - Bookmarklet logic (runs on app.expertoption.com):
+    a. Scans localStorage for a hex token (20-80 chars)
+    b. Falls back to scanning cookies
+    c. Falls back to hooking WebSocket.prototype.send to capture the token from the next outgoing WS message (Expert Option sends token in every message)
+    d. On capture: opens our app in a new tab with ?token=XXX
+  - The app URL is baked into the bookmarklet at generation time (window.location.origin)
+  - "نسخ" (copy) button as fallback for browsers where drag doesn't work
+  - Collapsible "إدخال يدوي للتوكن (احتياطي)" for manual paste
+  - Saved-token quick-reconnect card: if a token is saved, shows "توكن محفوظ على هذا الجهاز" with masked token + "اتصال" button + "مسح التوكن المحفوظ"
+- URL token reading: readUrlToken() in a lazy useState initializer; URL stripped via history.replaceState in a useEffect after mount (reliable across routers)
+- Fixed hydration mismatch: used useSyncExternalStore for client-only mount guard (lint-clean, no set-state-in-effect)
+- Lint clean (0 errors)
+
+Verification (agent-browser):
+- Bookmarklet href is valid javascript: URL (1190 chars, validJS:true, contains APP url + go() + WS hook) ✓
+- Simulated bookmarklet redirect: opened http://localhost:81/?token=cafebabe... → app read token, saved to localStorage, set autoConnect=true, cleaned URL to http://localhost:81/, showed "توكن محفوظ" card with masked token + اتصال button ✓
+- Token detection logic tested: correctly finds hex tokens in localStorage ✓
+- No hydration errors in console ✓
+- Fresh state (no token): bookmarklet section + steps + collapsible manual input all render ✓
+
+Stage Summary:
+- DONE. Manual token entry is removed. The bookmarklet is the primary, near-automatic method:
+  drag once → click while on Expert Option → token captured → app auto-connects.
+- A browser extension would make it 100% automatic (no click needed), but that's a separate project.
