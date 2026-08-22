@@ -460,3 +460,46 @@ Stage Summary:
   5. ssh root@VPS_IP → git clone → ./setup.sh
   6. certbot --nginx -d their-domain.com
   7. Update extension/content.js DEFAULT_APP_URL + manifest.json host_permissions
+
+---
+Task ID: 10
+Agent: orchestrator (main) — iPhone PWA + QR login
+Task: Make the app work as a native iPhone app (PWA) + QR code session transfer
+
+Work Log:
+- Installed qrcode + @types/qrcode packages
+- Generated PWA app icons: 192x192, 512x512, 180x180 (apple-touch), 32x32 (favicon)
+- Created public/manifest.json (PWA manifest: standalone, portrait, RTL, emerald theme)
+- Created public/sw.js (service worker: offline caching, network-first navigation, cache-first assets, skips /socket.io and /api)
+- Updated src/app/layout.tsx:
+  - Added manifest link, all icon sizes, apple-touch-icon
+  - appleWebApp config (capable, title, statusBarStyle black-translucent)
+  - viewport export with themeColor, viewportFit cover (for iPhone notch)
+  - iOS meta tags: mobile-web-app-capable, apple-mobile-web-app-capable, format-detection
+  - Inline script registers service worker on load
+- Added QR code login to LoginScreen:
+  - "نقل للآيفون (QR)" button in saved-account card
+  - showQrCode() generates QR containing app URL + ?token=XXX
+  - Modal with QR image + 3-step instructions (open camera → scan → tap notification)
+  - Closes on backdrop click or X button
+- Updated DEPLOY.md with "الخطوة 6: تثبيت التطبيق على الآيفون (PWA)" section
+- Lint clean, committed (2 commits)
+
+Honest iOS limitation:
+- iOS does NOT support browser extensions → the auto-capture extension won't work on iPhone
+- Solution: QR code transfer — user logs in on desktop (with extension), generates QR, scans with iPhone camera → session transfers to phone
+- After first login, token is saved in iPhone localStorage → no need to scan QR again
+
+Verification (agent-browser, viewport 390x844):
+- PWA meta tags all present (manifest, apple-touch-icon, apple-mobile-web-app-capable=yes, theme-color=#10b981) ✓
+- manifest.json served (HTTP 200, valid JSON) ✓
+- sw.js served (HTTP 200), service worker registered (scope=/) ✓
+- Icons served (HTTP 200) ✓
+- Saved token → "نقل للآيفون (QR)" button appears ✓
+- Clicked button → QR modal appeared with generated QR image + instructions ✓
+- Simulated iPhone scanning QR: opened app with ?token=deadbeef... → auto-connected, URL cleaned, dashboard appeared ✓
+
+Stage Summary:
+- DONE. App is now a installable PWA on iPhone.
+- Flow: desktop login (extension) → generate QR → iPhone scans → app opens + auto-connects → "Add to Home Screen" → native app experience.
+- Works offline (service worker), full screen (standalone), with app icon on home screen.
