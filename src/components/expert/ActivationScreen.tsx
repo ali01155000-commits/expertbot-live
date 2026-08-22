@@ -77,13 +77,13 @@ export default function ActivationScreen() {
         <div className="w-full max-w-md space-y-5">
           {/* Hero image */}
           <div className="relative mx-auto flex justify-center">
-            <div className="absolute inset-0 -z-10 blur-3xl bg-emerald-500/20 rounded-full" />
-            <img
-              src="/bot-hero.png"
-              alt="ExpertBot AI"
-              className="size-44 rounded-2xl object-cover ring-2 ring-emerald-500/30 shadow-[0_0_60px_-10px_rgba(16,185,129,0.5)]"
-            />
-          </div>
+              <div className="absolute inset-0 -z-10 blur-3xl bg-emerald-500/20 rounded-full" />
+              <img
+                src="/bot-hero.png"
+                alt="ExpertBot AI"
+                className="h-48 w-auto rounded-2xl object-cover ring-2 ring-emerald-500/30 shadow-[0_0_60px_-10px_rgba(16,185,129,0.5)]"
+              />
+            </div>
 
           {/* Header */}
           <div className="flex flex-col items-center gap-2 text-center">
