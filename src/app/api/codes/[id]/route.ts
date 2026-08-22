@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 
 // DELETE /api/codes/[id]?adminKey=XXX
-// يحذف أو يُعطّل كود
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -26,10 +25,12 @@ export async function DELETE(
 
 // PATCH /api/codes/[id]
 // Body: { adminKey, action: "disable" | "enable" | "reset" }
-export async function PATCH(req: NextRequest) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const url = new URL(req.url);
-    const id = url.pathname.split("/").pop()!;
+    const { id } = await params;
     const body = await req.json();
     const { adminKey, action } = body || {};
 
@@ -38,7 +39,7 @@ export async function PATCH(req: NextRequest) {
       return Response.json({ error: "مفتاح المسؤول غير صحيح" }, { status: 401 });
     }
 
-    const data: any = {};
+    const data: { status?: string; usedAt?: null; usedByToken?: null; usedByNote?: null } = {};
     if (action === "disable") data.status = "disabled";
     if (action === "enable") data.status = "active";
     if (action === "reset") {
