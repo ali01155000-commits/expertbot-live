@@ -597,3 +597,41 @@ The fundamental tradeoff:
 - Web: works on all phones, but needs token + uses protocol (not button clicks)
 
 The user must choose based on their priority. Both are built and ready.
+
+---
+Task ID: 13
+Agent: orchestrator (main) — iPhone-first design + detailed QR guide
+Task: Build app focused on iPhone + step-by-step QR instructions
+
+Work Log:
+- Added device detection (iPhone/Android/desktop) via lazy useState (client-only, gated by mounted)
+- iPhone shows dedicated "إعداد التطبيق على الآيفون" guide (5 steps):
+  1. Open this app on a computer (with copyable URL button)
+  2. On computer: install extension + login to Expert Option
+  3. On computer: click "نقل للآيفون (QR)" button
+  4. On iPhone: open Camera → scan QR → tap notification
+  5. Add to Home Screen (Share → Add to Home Screen)
+  + Note: after first time, token is saved — no computer needed again
+- Desktop shows extension login flow (3 steps: install extension, open EO, auto-connect)
+- Android shows extension + manual token fallback
+- QR modal completely redesigned with 5 detailed step cards:
+  - Step 1: "افتح الكاميرا على الآيفون" — open Camera app, no install needed
+  - Step 2: "وجّه الكاميرا نحو الـ QR code" — 15-30cm distance, yellow notification appears
+  - Step 3: "اضغط على الإشعار" — opens Safari, app auto-connects
+  - Step 4: "أضف التطبيق للشاشة الرئيسية" — Share button → Add to Home Screen
+  - Step 5: "تم!" — app icon on home screen, auto-connects on future opens
+  + Tips section: QR settings toggle, alternative QR readers, session expiry note
+- Refactored into 3 components: IPhoneSetupGuide, DesktopLoginSection, QRModal
+- Lint clean (0 errors)
+
+Verification (agent-browser):
+- iPhone 17 device emulation → "إعداد التطبيق على الآيفون" guide appeared with all 5 steps ✓
+- Desktop → saved token card + "نقل للآيفون (QR)" button appeared ✓
+- Clicked QR button → detailed modal with 5 step cards + QR image + tips ✓
+- All steps present (step1: افتح الكاميرا, step4: Add to Home Screen) ✓
+- Screenshots captured: iphone-guide.png, qr-modal-steps.png
+
+Stage Summary:
+- DONE. App is iPhone-first with detailed step-by-step QR instructions.
+- iPhone users see a clear 5-step guide explaining exactly what to do.
+- QR modal has detailed instructions for each step of the scanning process.
