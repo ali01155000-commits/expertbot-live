@@ -692,3 +692,49 @@ Verification (agent-browser):
 Stage Summary:
 - DONE. Users now have a clear, step-by-step guide accessible from the login screen.
 - Covers both extension installation (Chrome/Firefox) and bot usage (start → monitor).
+
+---
+Task ID: 16
+Agent: orchestrator (main) — activation code system
+Task: Add activation code login system for the bot
+
+Work Log:
+- Prisma schema: added ActivationCode model
+  (code, status active|used|disabled, usedByToken, usedByNote, createdAt, usedAt, expiresAt, note)
+- Pushed schema to SQLite db
+- API routes (6 endpoints):
+  - POST /api/codes/create — generate 1-100 codes (admin-key protected, optional expiresInDays)
+  - POST /api/codes/validate — validate + activate code (marks as used, records user agent)
+  - GET /api/codes/validate?code=X — check validity without activating
+  - GET /api/codes/list?adminKey=X — list all codes with stats (total/active/used/disabled)
+  - DELETE /api/codes/[id]?adminKey=X — delete a code
+  - PATCH /api/codes/[id] — disable/enable/reset a code
+- ActivationScreen component:
+  - Code input field (XXXX-XXXX-XXXX-XXXX format, auto-uppercase)
+  - Validates via API, shows specific errors (not found / used / disabled / expired)
+  - Saves to localStorage for session persistence
+  - Beautiful dark UI matching the app theme
+- Store integration: activated + activationCode state
+  - Persisted to localStorage on activation
+  - Restored from localStorage on page load
+  - reset() preserves activation (disconnect ≠ logout)
+- page.tsx: activation gate — must enter valid code BEFORE seeing login screen
+- DashboardHeader: added 'إلغاء التفعيل' (full logout, clears activation) option
+- Code format: 16 chars (A-Z, 2-9 — no ambiguous I/O/0/1), 4 groups of 4
+- Default admin key: 'expertbot-admin-2024' (override via ADMIN_KEY env var)
+
+Verification (agent-browser + curl):
+- Created test code via API: 66M8-F99M-R7MY-QXYQ ✓
+- Fresh visit → activation screen appears (not login) ✓
+- Wrong code → "الكود غير موجود" error ✓
+- Correct code → activated, proceeds to login screen ✓
+- Reusing used code → "هذا الكود مُستخدم بالفعل" error ✓
+- API GET validate confirms code status=used ✓
+- Created 3 more codes, list shows total=4 active=3 used=1 ✓
+- Lint clean (0 errors)
+
+Stage Summary:
+- DONE. Activation code system fully working.
+- Users must enter a valid code to access the bot.
+- Admin can create/list/manage codes via API (admin key protected).
+- Codes are one-time-use, can be disabled/reset, optional expiry.
