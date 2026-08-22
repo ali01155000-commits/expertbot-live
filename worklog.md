@@ -635,3 +635,21 @@ Stage Summary:
 - DONE. App is iPhone-first with detailed step-by-step QR instructions.
 - iPhone users see a clear 5-step guide explaining exactly what to do.
 - QR modal has detailed instructions for each step of the scanning process.
+
+---
+Task ID: 14
+Agent: orchestrator (main) — fix HMR module factory error
+Task: Fix "module factory is not available" error shown by user
+
+Work Log:
+- User reported error in screenshot: "(ecmascript) <export default as zap> was module ... but the module factory is not available. It might have been deleted in an HMR update."
+- Diagnosed: this is a known Next.js 16 + Turbopack HMR (Hot Module Replacement) bug that occurs after rapid file edits. NOT a real code error.
+- Verified all lucide-react icons (Bot, Zap, Smartphone, Share, QrCode, ScanLine, Puzzle, etc.) exist in v0.525.0 — all OK
+- Fix: killed dev server → cleared .next cache → restarted dev server
+- Verified: page loads HTTP 200, content renders correctly, no console errors
+- iPhone 17 emulation: "إعداد التطبيق على الآيفون" guide with all 5 steps appears ✓
+- Desktop: login section with extension download appears ✓
+- No "Application error" anywhere
+
+Stage Summary:
+- DONE. Error was a transient HMR cache issue, not a code bug. Fixed by clearing .next + restarting dev server.
