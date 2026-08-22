@@ -415,3 +415,48 @@ Stage Summary:
 - DONE. Browser extension provides fully automatic login.
 - User flow: install extension (once) → open Expert Option → login normally → app auto-opens → bot trades.
 - No token UI in the app anymore. Extension + zip ready for download at /extension.zip.
+
+---
+Task ID: 9
+Agent: orchestrator (main) — production deployment prep
+Task: Prepare app for real Hostinger VPS deployment from GitHub
+
+Work Log:
+- Made socket.io connection configurable via env var:
+  - NEXT_PUBLIC_EXPERT_SERVICE_URL (production: explicit service URL with /socket.io path)
+  - Sandbox fallback: ?XTransformPort=3003 Caddy gateway hack (unchanged)
+- expert-service: SOCKET_PATH env var (production: "/socket.io", sandbox: "/")
+- Created deployment files:
+  - .env.example — all production env vars documented
+  - ecosystem.config.cjs — PM2 config (runs Next.js :3000 + expert-service :3003, auto-restart)
+  - nginx.conf — reverse proxy (Next.js + /socket.io → expert-service, with SSL placeholders)
+  - setup.sh — one-command VPS setup (installs Node 20 + Bun + PM2 + Nginx, builds, starts)
+  - Dockerfile — single-container option (Next.js + expert-service + Nginx via supervisord)
+  - DEPLOY.md — complete step-by-step Hostinger VPS guide (GitHub push → VPS setup → SSL → extension update)
+  - README.md — project overview + architecture diagram
+- Updated .gitignore: exclude db/*.db, *.png, *.log, .zscripts/, examples/, mini-services/*/node_modules
+- Git: cleaned tracking (removed screenshots, .env, db, sandbox-internal scripts)
+- Committed: "Production deployment setup" + cleanup commits
+- Repo ready for: git remote add origin + git push
+
+Honest constraints explained to user:
+- I CANNOT push to their GitHub (no credentials) — they must do `git remote add origin` + `git push`
+- I CANNOT deploy to Hostinger (no credentials) — they must buy VPS + ssh + run setup.sh
+- Hostinger SHARED hosting won't work (no Node/Bun) — needs VPS
+- DEPLOY.md has the complete step-by-step guide
+
+Verification:
+- Lint clean ✓
+- Sandbox still works (NEXT_PUBLIC_EXPERT_SERVICE_URL unset → Caddy fallback) ✓
+- Simulated extension postMessage → dashboard appeared ✓
+- 107 files tracked, no secrets/db/logs in repo ✓
+
+Stage Summary:
+- DONE. App is production-ready. User needs to:
+  1. Create a GitHub repo
+  2. git remote add origin https://github.com/USERNAME/expertbot-live.git
+  3. git push -u origin main
+  4. Buy Hostinger VPS (Ubuntu 22.04)
+  5. ssh root@VPS_IP → git clone → ./setup.sh
+  6. certbot --nginx -d their-domain.com
+  7. Update extension/content.js DEFAULT_APP_URL + manifest.json host_permissions
