@@ -290,3 +290,38 @@ Stage Summary:
 - DONE. Manual token entry is removed. The bookmarklet is the primary, near-automatic method:
   drag once → click while on Expert Option → token captured → app auto-connects.
 - A browser extension would make it 100% automatic (no click needed), but that's a separate project.
+
+---
+Task ID: 6
+Agent: orchestrator (main) — mobile-friendly token + hosting answer
+Task: Replace hard-to-use bookmarklet with mobile-friendly console-command flow
+
+Work Log:
+- User feedback: bookmarklet is impractical on mobile (no drag-to-bookmarks on touch)
+- Removed: buildBookmarklet function, bookmarklet state, draggable <a> element, copyBookmarklet, collapsible "manual input" section
+- Added mobile-first "الحصول على التوكن" section with 3 clear touch-friendly steps:
+  1. Big "فتح Expert Option" button (opens app.expertoption.com in new tab)
+  2. Console command shown in a code block + "نسخ الأمر" button (copies the JS one-liner that extracts the token from Expert Option's localStorage)
+  3. Token paste field with built-in "لصق" button (reads from clipboard via navigator.clipboard.readText()) + "اتصال" button
+- The console command: copy(JSON.parse(localStorage.getItem('auth')||'{}').token||Object.values(localStorage).find(v=>/^[a-f0-9]{24,}$/i.test(v)))
+  - Tries auth.token first, then scans localStorage for any hex 24+ char string
+- Removed unused imports (Bookmark, ChevronDown, ChevronUp, Terminal)
+- Lint clean (0 errors)
+
+Verification (agent-browser, viewport 390x844 mobile):
+- Fresh login: 3 steps render correctly, "فتح Expert Option" link present, console command visible, "نسخ الأمر" button works, paste field + "لصق" button + "اتصال" button all functional ✓
+- Pasted fake token → connect button enabled → clicked → token saved to localStorage + autoConnect=true ✓
+- Reload → "توكن محفوظ على هذا الجهاز" card appears with masked token + quick "اتصال" button ✓
+- No console errors after reload ✓
+- Desktop view also clean ✓
+
+Hosting answer (for user):
+- Token is ALWAYS required (it's the Expert Option session identity — not our choice, it's the protocol)
+- On paid hosting (Hostinger etc): the bot runs 24/7 server-side (good — trades while you sleep)
+- SECURITY: never hardcode the token in source. Set it as an environment variable on the hosting panel
+- The frontend still needs the token entered by the user (per-session), stored in browser localStorage
+
+Stage Summary:
+- DONE. Mobile-friendly token entry: open EO → copy console command → paste in app → connect.
+- No more bookmarklet drag-and-drop. All buttons are large and touch-friendly.
+- Saved token enables one-tap reconnect on return visits.
