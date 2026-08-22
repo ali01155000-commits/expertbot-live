@@ -557,3 +557,43 @@ Stage Summary:
 - DONE. Electron desktop app built. This is the real solution to the user's request.
 - User runs `npm install && npm start` in desktop-app/ on their computer.
 - No token needed, no extension, no QR code — just login + click start.
+
+---
+Task ID: 12
+Agent: orchestrator (main) — web vs desktop comparison
+Task: Answer: does the web version work well on Android/iPhone instead of the desktop app?
+
+Honest comparison delivered to user:
+
+| Feature | Electron Desktop | Web (Android/iPhone) |
+|---|---|---|
+| Embed Expert Option in app | ✅ works (strips X-Frame-Options) | ❌ impossible |
+| Control Buy/Sell buttons in page | ✅ works | ❌ impossible |
+| Works on Android/iPhone | ❌ desktop only | ✅ yes |
+| No token needed | ✅ yes | ❌ token required |
+
+WHY web can't do what Electron does:
+1. X-Frame-Options: Expert Option sends this header, browsers honor it, cannot be stripped from web
+2. Same-Origin Policy: web app cannot read/control Expert Option DOM
+3. No HTTP header access: browsers don't let web apps remove response headers
+These are SECURITY features of the browser itself — unfixable.
+
+What DOES work on web (current implementation):
+- Connects to real Expert Option servers via WebSocket protocol (the Python ExpertOptionApi port)
+- Live prices + candlestick chart
+- Executes Buy/Sell trades via the Expert Option WebSocket protocol (not by clicking buttons)
+- Works on Android + iPhone (responsive PWA)
+- REQUIRES token (unavoidable on web)
+
+Verification:
+- Web app loads on mobile viewport (390x844 iPhone, 412x915 Android) ✓
+- Login screen renders correctly ✓
+- Simulated extension postMessage → dashboard appeared with bottom tab nav ✓
+- socket.io service receives connections ✓
+- No console errors ✓
+
+The fundamental tradeoff:
+- Desktop (Electron): no token, controls page directly, but desktop-only
+- Web: works on all phones, but needs token + uses protocol (not button clicks)
+
+The user must choose based on their priority. Both are built and ready.
