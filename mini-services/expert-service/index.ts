@@ -9,8 +9,10 @@ import { ExpertClient, REGIONS } from "./expert-client";
 import { BotEngine } from "./bot-engine";
 
 const httpServer = createServer();
+// In production, set SOCKET_PATH="/socket.io" (standard, Nginx-proxied).
+// In sandbox, path "/" is required by the Caddy gateway hack.
 const io = new Server(httpServer, {
-  path: "/",
+  path: process.env.SOCKET_PATH || "/",
   cors: { origin: "*", methods: ["GET", "POST"] },
   pingTimeout: 60000,
   pingInterval: 25000,

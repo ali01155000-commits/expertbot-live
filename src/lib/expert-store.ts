@@ -162,18 +162,38 @@ function attachExpertListeners(socket: Socket, store: ExpertStoreApi) {
 /**
  * Lazily create the singleton socket.io client + attach all listeners.
  * Safe to call from multiple components — the socket is created only once.
+ *
+ * Connection URL resolution:
+ *  - Production: set NEXT_PUBLIC_EXPERT_SERVICE_URL to your deployed service
+ *    (e.g. "https://yourdomain.com" — Nginx proxies /socket.io to the service)
+ *  - Sandbox/dev: fall back to the Caddy gateway hack "?XTransformPort=3003"
  */
 export function ensureExpertSocket(): Socket {
   if (!socketInstance) {
-    socketInstance = io("/?XTransformPort=3003", {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-      timeout: 15000,
-    });
+    // Production: NEXT_PUBLIC_EXPERT_SERVICE_URL set → connect to it with path /socket.io
+    // Sandbox/dev: not set → same-origin with the Caddy gateway hack ?XTransformPort=3003
+    const serviceUrl = process.env.NEXT_PUBLIC_EXPERT_SERVICE_URL || "";
+    if (serviceUrl) {
+      // Production: dedicated service URL, standard socket.io path
+      socketInstance = io(serviceUrl, {
+        path: "/socket.io",
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        timeout: 15000,
+      });
+    } else {
+      // Sandbox: Caddy gateway routes ?XTransformPort=3003 → expert-service
+      socketInstance = io("/?XTransformPort=3003", {
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        timeout: 15000,
+      });
+    }
     attachExpertListeners(socketInstance, useExpertStore as unknown as ExpertStoreApi);
-    // Mirror into store (one-time set, will trigger one re-render — fine)
     useExpertStore.getState().setSocket(socketInstance);
   }
   return socketInstance;

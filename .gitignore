@@ -52,3 +52,18 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# ExpertBot: database, runtime logs, screenshots
+db/*.db
+db/*.db-journal
+*.png
+market-service.log
+/tmp/
+.zscripts/
+upload/
+download/
+tests/
+examples/
+mini-services/*/node_modules/
+.claude
+.z-ai-config
