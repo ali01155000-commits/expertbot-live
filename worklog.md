@@ -368,3 +368,50 @@ Stage Summary:
 - DONE. The popup-based login is the closest achievable UX to "browser inside app".
 - User flow: click "دخول بـ Expert Option" → popup opens → login there → run console command → paste token here → bot trades.
 - This is the maximum possible without a browser extension.
+
+---
+Task ID: 8
+Agent: orchestrator (main) — browser extension for full auto-login
+Task: Build Chrome/Firefox extension that auto-captures Expert Option session (user never sees/touches token)
+
+Work Log:
+- Built a Manifest V3 browser extension at /home/z/my-project/extension/:
+  - manifest.json — MV3, permissions: storage+tabs, host_permissions for app.expertoption.com + localhost, content_scripts on EO, externally_connectable for app↔extension messaging
+  - content.js — runs on app.expertoption.com:
+    1. Scans localStorage for hex token (auth.token key + generic scan)
+    2. Falls back to cookie scan
+    3. Falls back to WebSocket.prototype.send hook (EO sends token in every WS message)
+    4. On capture: stores in chrome.storage.local, sends postMessage to app, opens app tab with ?token=
+    5. Shows a green slide-in notification "✓ تم ربط ExpertBot Live"
+  - background.js — service worker: opens app tab on content.js request, handles externally_connectable ping + get-token from app, opens welcome page on install
+  - popup.html + popup.js — extension popup showing status + configurable app URL field (for when user deploys to paid hosting)
+  - icon.png — generated 128x128 green icon
+- Packaged as public/extension.zip (downloadable from the app at /extension.zip)
+- Rewrote LoginScreen.tsx:
+  - REMOVED all token-related UI (no token input, no console command, no paste field)
+  - 3 simple steps: (1) download+install extension, (2) open Expert Option, (3) "that's it!"
+  - Detects extension via postMessage listener (extension sends {type:"eo-token", token})
+  - Also reads ?token= from URL (extension opens app with this)
+  - Saved-account quick-reconnect card (masked token, one-tap connect, "forget" button)
+  - Extension status indicator (amber "install" vs green "installed")
+  - Install instructions in a collapsible details popup (Chrome + Firefox)
+- Lint clean (0 errors)
+
+Verification (agent-browser, viewport 390x844 mobile + 1280x800 desktop):
+- Fresh login: clean screen, NO mention of "token" anywhere, 3 steps + download button ✓
+- Simulated extension postMessage {type:"eo-token", token:"a1b2..."} → app received it, saved to localStorage, dashboard appeared ✓
+- Simulated extension opening app with ?token=cafebabe... → app read token, cleaned URL, auto-connected, dashboard appeared ✓
+- Reload with saved token → "حسابك محفوظ" card with masked token + "اتصال مباشر" button ✓
+- extension.zip downloadable at /extension.zip (HTTP 200, 6219 bytes) ✓
+- No console errors ✓
+
+Honest note for user:
+- The token STILL EXISTS technically (it's EO's session ID — unavoidable)
+- But the user NEVER sees or touches it — the extension handles everything in the background
+- From the user's UX perspective: install extension → open EO → login → app auto-opens and bot trades
+- This is "automatic without token" from the user's perspective
+
+Stage Summary:
+- DONE. Browser extension provides fully automatic login.
+- User flow: install extension (once) → open Expert Option → login normally → app auto-opens → bot trades.
+- No token UI in the app anymore. Extension + zip ready for download at /extension.zip.

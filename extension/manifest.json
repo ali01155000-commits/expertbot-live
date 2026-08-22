@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "ExpertBot Auto Login",
+  "version": "1.0.0",
+  "description": "يلتقط جلسة Expert Option تلقائياً ويفتح ExpertBot Live جاهزاً للتداول — بدون نسخ أو لصق التوكن.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": [
+    "https://app.expertoption.com/*",
+    "http://localhost/*",
+    "http://localhost:81/*",
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://app.expertoption.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "externally_connectable": {
+    "matches": [
+      "http://localhost/*",
+      "http://localhost:81/*",
+      "http://localhost:3000/*"
+    ]
+  }
+}

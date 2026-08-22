@@ -4,19 +4,18 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import {
   Bot,
   CheckCircle2,
-  ClipboardCopy,
+  Download,
   ExternalLink,
   Loader2,
   LogIn,
   Monitor,
+  Puzzle,
   ShieldAlert,
   Trash2,
   Zap,
-  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -35,11 +34,6 @@ import { REGION_LIST } from "@/lib/expert-types";
 const TOKEN_KEY = "expertbot.token";
 const REGION_KEY = "expertbot.region";
 const DEMO_KEY = "expertbot.isDemo";
-
-// Console command the user runs on app.expertoption.com DevTools Console.
-// It copies the Expert Option session token to the clipboard.
-const CONSOLE_CMD =
-  "copy(JSON.parse(localStorage.getItem('auth')||'{}').token||Object.values(localStorage).find(v=>/^[a-f0-9]{24,}$/i.test(v)))";
 
 function loadSaved() {
   if (typeof window === "undefined") return null;
@@ -79,15 +73,12 @@ export default function LoginScreen() {
   });
   const [region, setRegion] = useState(() => loadSaved()?.region ?? "EUROPE");
   const [isDemo, setIsDemo] = useState(() => loadSaved()?.isDemo ?? true);
-  const [manualToken, setManualToken] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [popupOpen, setPopupOpen] = useState(false);
-  const popupRef = useRef<Window | null>(null);
+  const [extDetected, setExtDetected] = useState(false);
 
   const connecting = useExpertStore((s) => s.connecting);
   const connectionError = useExpertStore((s) => s.connectionError);
 
-  // Avoid SSR/client hydration mismatch (localStorage is client-only).
+  // Avoid SSR/client hydration mismatch.
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -97,6 +88,9 @@ export default function LoginScreen() {
   const connectWithToken = useCallback(
     (t: string) => {
       if (!t.trim()) return;
+      try {
+        localStorage.setItem(TOKEN_KEY, t.trim());
+      } catch {}
       useExpertStore.getState().setConnecting(true);
       useExpertStore.getState().setConnectionError(null);
       useExpertStore.getState().setRegion(region);
@@ -105,17 +99,54 @@ export default function LoginScreen() {
     [region, isDemo, socket]
   );
 
-  // Strip ?token= from the URL after mount.
+  // Strip ?token= / ?installed= from the URL after mount.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.has("token")) {
+      if (params.has("token") || params.has("installed")) {
         const url = new URL(window.location.href);
         url.searchParams.delete("token");
+        url.searchParams.delete("installed");
         window.history.replaceState({}, "", url.toString());
       }
     } catch {}
+  }, []);
+
+  // Listen for postMessage from the browser extension (content.js).
+  // The extension sends { type: "eo-token", token } when it captures the
+  // session on app.expertoption.com.
+  useEffect(() => {
+    const onMessage = (ev: MessageEvent) => {
+      const data = ev.data;
+      if (
+        data &&
+        typeof data === "object" &&
+        data.type === "eo-token" &&
+        data.token &&
+        typeof data.token === "string" &&
+        /^[a-f0-9]{20,}$/i.test(data.token)
+      ) {
+        setExtDetected(true);
+        setToken(data.token);
+        connectWithToken(data.token);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [connectWithToken]);
+
+  // Detect if the extension is installed (it injects a window flag).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () => {
+      if ((window as any).__expertBotExtension) {
+        setExtDetected(true);
+      }
+    };
+    check();
+    const iv = setInterval(check, 2000);
+    return () => clearInterval(iv);
   }, []);
 
   // Auto-connect if a saved token exists (and the user didn't explicitly disconnect).
@@ -140,79 +171,21 @@ export default function LoginScreen() {
     } catch {}
   }, [region, isDemo]);
 
-  // Close popup on unmount.
-  useEffect(() => {
-    return () => {
-      try {
-        popupRef.current?.close();
-      } catch {}
-    };
-  }, []);
-
-  /** Open Expert Option in a popup window (closest UX to "browser inside app"). */
-  const openExpertPopup = () => {
-    const w = 1100;
-    const h = 720;
-    const left = window.screenX + (window.outerWidth - w) / 2;
-    const top = window.screenY + (window.outerHeight - h) / 2;
-    const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no`;
-    const url = "https://app.expertoption.com/";
-    try {
-      popupRef.current = window.open(url, "expertoption_login", features);
-    } catch {
-      popupRef.current = null;
-    }
-    // If popup blocked, fallback to new tab.
-    if (!popupRef.current) {
-      window.open(url, "_blank");
-    }
-    setPopupOpen(true);
-  };
-
-  const copyConsoleCmd = () => {
-    navigator.clipboard
-      ?.writeText(CONSOLE_CMD)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => {});
-  };
-
-  const pasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) setManualToken(text.trim());
-    } catch {}
-  };
-
-  const handleConnect = () => {
-    const t = manualToken.trim();
-    if (!t) return;
-    try {
-      localStorage.setItem(TOKEN_KEY, t);
-    } catch {}
-    setToken(t);
-    // Close the popup — we have the token now.
-    try {
-      popupRef.current?.close();
-    } catch {}
-    setPopupOpen(false);
-    connectWithToken(t);
-  };
-
   const handleClearSaved = () => {
     try {
       localStorage.removeItem(TOKEN_KEY);
     } catch {}
     setToken("");
-    setManualToken("");
     useExpertStore.getState().setConnectionError(null);
   };
 
   const maskedToken = token
     ? token.slice(0, 6) + "••••••••" + token.slice(-4)
     : "";
+
+  const openExpertOption = () => {
+    window.open("https://app.expertoption.com/", "_blank");
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0a0e14] text-zinc-100">
@@ -232,14 +205,14 @@ export default function LoginScreen() {
                 Expert<span className="text-emerald-400">Bot</span> Live
               </h1>
               <p className="mt-1 text-sm text-zinc-400">
-                بوت تداول Expert Option الآلي
+                بوت تداول Expert Option الآلي — دخول تلقائي
               </p>
             </div>
           </div>
 
           {mounted && (
             <>
-              {/* === Saved-token quick reconnect === */}
+              {/* === Saved account quick reconnect === */}
               {token && (
                 <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4">
                   <div className="flex items-center justify-between gap-3">
@@ -247,7 +220,7 @@ export default function LoginScreen() {
                       <CheckCircle2 className="size-5 text-emerald-400 shrink-0" />
                       <div>
                         <div className="text-sm font-semibold text-emerald-200">
-                          حساب محفوظ على هذا الجهاز
+                          حسابك محفوظ على هذا الجهاز
                         </div>
                         <div className="font-mono text-[11px] text-emerald-400/80" dir="ltr">
                           {maskedToken}
@@ -277,136 +250,121 @@ export default function LoginScreen() {
                 </div>
               )}
 
-              {/* === Primary: popup login === */}
+              {/* === Primary: install extension for auto-login === */}
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-2xl backdrop-blur-xl">
                 <div className="mb-4 flex items-center gap-2">
-                  <Monitor className="size-5 text-emerald-400" />
+                  <Puzzle className="size-5 text-emerald-400" />
                   <h2 className="text-base font-semibold text-zinc-100">
-                    تسجيل الدخول إلى Expert Option
+                    الدخول التلقائي إلى Expert Option
                   </h2>
                 </div>
 
-                {/* Big primary button */}
-                <Button
-                  onClick={openExpertPopup}
-                  disabled={connecting}
-                  className="w-full h-14 gap-2.5 bg-emerald-500 text-black hover:bg-emerald-400 font-bold text-base shadow-[0_0_30px_-5px_rgba(16,185,129,0.6)] disabled:opacity-60"
-                >
-                  <LogIn className="size-5" />
-                  دخول بـ Expert Option
-                </Button>
-
-                {/* In-app instructions (shown after popup opens) */}
-                {popupOpen && (
-                  <div className="mt-4 space-y-3 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-[12px] font-semibold text-emerald-200">
-                        <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
-                        نافذة Expert Option مفتوحة
-                      </span>
-                      <button
-                        onClick={() => {
-                          try {
-                            popupRef.current?.close();
-                          } catch {}
-                          setPopupOpen(false);
-                        }}
-                        className="rounded p-1 text-emerald-400/60 hover:text-red-400 transition"
-                        aria-label="إغلاق"
-                      >
-                        <X className="size-4" />
-                      </button>
+                {/* Extension status */}
+                {extDetected ? (
+                  <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
+                    <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                    <span className="text-[12px] font-medium text-emerald-200">
+                      الإضافة مُثبّتة وفعّالة — ستلتقط جلستك تلقائياً
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/[0.08] p-3">
+                    <Puzzle className="size-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-[12px] leading-relaxed text-amber-200">
+                      <strong>ثبّت إضافة المتصفح</strong> مرة واحدة للدخول التلقائي
+                      الكامل — بدون نسخ أو لصق أي شيء.
                     </div>
+                  </div>
+                )}
 
-                    <div className="space-y-2 text-[11px] leading-relaxed text-zinc-300">
-                      <p>
-                        <strong className="text-emerald-300">١.</strong> سجّل
-                        دخولك في نافذة Expert Option بحسابك (بريد + كلمة مرور).
+                {/* Step 1: install extension */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+                      ١
+                    </span>
+                    <div className="flex-1 space-y-2">
+                      <p className="text-[12px] leading-relaxed text-zinc-300">
+                        ثبّت إضافة «ExpertBot Auto Login» على متصفحك:
                       </p>
-                      <p>
-                        <strong className="text-emerald-300">٢.</strong> بعد دخولك،
-                        اضغط <strong className="text-emerald-300">F12</strong> ←
-                        تبويب <strong className="text-emerald-300">Console</strong>{" "}
-                        ← ألصق هذا الأمر واضغط Enter:
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          href="/extension.zip"
+                          download
+                          className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+                        >
+                          <Download className="size-3.5" />
+                          تحميل الإضافة
+                        </a>
+                        <details className="relative">
+                          <summary className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-zinc-400 hover:text-zinc-200 transition list-none">
+                            <Monitor className="size-3.5" />
+                            طريقة التثبيت
+                          </summary>
+                          <div className="absolute z-50 mt-2 w-72 rounded-lg border border-white/10 bg-[#0a0e14] p-3 text-[11px] leading-relaxed text-zinc-300 shadow-xl">
+                            <p className="mb-1.5 font-semibold text-zinc-100">
+                              Chrome / Edge:
+                            </p>
+                            <ol className="ml-4 list-decimal space-y-0.5">
+                              <li>افتح <code className="rounded bg-white/5 px-1">chrome://extensions</code></li>
+                              <li>فعّل «وضع المطوّر» أعلى اليمين</li>
+                              <li>«تحميل غير مُحزَّم» ← اختر مجلد <code className="rounded bg-white/5 px-1">extension/</code></li>
+                            </ol>
+                            <p className="mb-1.5 mt-2 font-semibold text-zinc-100">
+                              Firefox:
+                            </p>
+                            <ol className="ml-4 list-decimal space-y-0.5">
+                              <li>افتح <code className="rounded bg-white/5 px-1">about:debugging</code></li>
+                              <li>«This Firefox» ← «Load Temporary Add-on»</li>
+                              <li>اختر <code className="rounded bg-white/5 px-1">manifest.json</code></li>
+                            </ol>
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 2: open Expert Option */}
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+                      ٢
+                    </span>
+                    <div className="flex-1 space-y-2">
+                      <p className="text-[12px] leading-relaxed text-zinc-300">
+                        افتح Expert Option وسجّل دخولك بحسابك كالمعتاد:
+                      </p>
+                      <Button
+                        onClick={openExpertOption}
+                        className="w-full h-12 gap-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold"
+                      >
+                        <ExternalLink className="size-4" />
+                        فتح Expert Option
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Step 3: auto */}
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
+                      ٣
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-[12px] leading-relaxed text-zinc-300">
+                        <strong className="text-emerald-300">هذا كل شيء!</strong>{" "}
+                        بمجرد تسجيل دخولك، ستلتقط الإضافة جلستك تلقائياً ويفتح
+                        التطبيق جاهزاً لبدء التداول.
                       </p>
                     </div>
+                  </div>
+                </div>
 
-                    <div className="rounded-lg border border-white/10 bg-black/60 p-2.5">
-                      <code className="block font-mono text-[10px] leading-relaxed text-emerald-300 break-all" dir="ltr">
-                        {CONSOLE_CMD}
-                      </code>
-                    </div>
-
-                    <button
-                      onClick={copyConsoleCmd}
-                      className="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-emerald-300 transition"
-                    >
-                      {copied ? (
-                        <>
-                          <CheckCircle2 className="size-3 text-emerald-400" />
-                          <span className="text-emerald-400">تم النسخ — الصقه في Console</span>
-                        </>
-                      ) : (
-                        <>
-                          <ClipboardCopy className="size-3" />
-                          نسخ الأمر
-                        </>
-                      )}
-                    </button>
-
-                    <p className="text-[11px] leading-relaxed text-zinc-300">
-                      <strong className="text-emerald-300">٣.</strong> ارجع هنا
-                      وألصق التوكن:
-                    </p>
-
-                    <div className="relative">
-                      <Input
-                        type="text"
-                        value={manualToken}
-                        onChange={(e) => setManualToken(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !connecting) handleConnect();
-                        }}
-                        placeholder="ألصق التوكن هنا..."
-                        className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-12 pr-3 pl-16"
-                        autoComplete="off"
-                        spellCheck={false}
-                        dir="ltr"
-                      />
-                      <button
-                        onClick={pasteFromClipboard}
-                        className="absolute inset-y-0 left-1 my-1 flex items-center gap-1 rounded-md bg-emerald-500/15 px-2.5 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/25 transition"
-                      >
-                        <ClipboardCopy className="size-3.5" />
-                        لصق
-                      </button>
-                    </div>
-
-                    <Button
-                      onClick={handleConnect}
-                      disabled={connecting || !manualToken.trim()}
-                      className="w-full h-11 bg-emerald-500 text-black hover:bg-emerald-400 font-semibold gap-2"
-                    >
-                      {connecting ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <LogIn className="size-4" />
-                      )}
-                      اتصال وبدء التداول
-                    </Button>
-
-                    <p className="text-[10px] text-zinc-500">
-                      لم تفتح النافذة؟{" "}
-                      <a
-                        href="https://app.expertoption.com"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-0.5 text-emerald-400 hover:text-emerald-300 transition"
-                      >
-                        فتح Expert Option يدوياً
-                        <ExternalLink className="size-3" />
-                      </a>
-                    </p>
+                {/* Connecting indicator */}
+                {connecting && (
+                  <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.08] p-3">
+                    <Loader2 className="size-4 animate-spin text-emerald-400 shrink-0" />
+                    <span className="text-[12px] text-emerald-200">
+                      جارٍ الاتصال بـ Expert Option وبدء التداول…
+                    </span>
                   </div>
                 )}
               </div>
@@ -494,6 +452,31 @@ export default function LoginScreen() {
                 </div>
               )}
 
+              {/* How it works */}
+              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Zap className="size-4 text-emerald-400" />
+                  <h3 className="text-xs font-semibold text-zinc-200">كيف يعمل الدخول التلقائي</h3>
+                </div>
+                <ol className="space-y-1.5 text-[11px] leading-relaxed text-zinc-400">
+                  <li>
+                    <strong className="text-emerald-300">١.</strong> تثبّت الإضافة مرة واحدة على متصفحك.
+                  </li>
+                  <li>
+                    <strong className="text-emerald-300">٢.</strong> تفتح Expert Option وتسجل دخولك كالمعتاد.
+                  </li>
+                  <li>
+                    <strong className="text-emerald-300">٣.</strong> الإضافة تلتقط جلستك تلقائياً في الخلفية.
+                  </li>
+                  <li>
+                    <strong className="text-emerald-300">٤.</strong> يفتح التطبيق جاهزاً — تشغّل البوت فيتداول آلياً.
+                  </li>
+                </ol>
+                <p className="mt-2 text-[10px] text-zinc-500">
+                  لا حاجة لنسخ أو لصق أي شيء — كل شيء تلقائي.
+                </p>
+              </div>
+
               {/* Risk warning */}
               <div className="rounded-2xl border border-red-500/30 bg-red-950/20 p-4">
                 <div className="flex items-start gap-3">
@@ -509,32 +492,10 @@ export default function LoginScreen() {
                 </div>
               </div>
 
-              {/* How it works */}
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <Zap className="size-4 text-emerald-400" />
-                  <h3 className="text-xs font-semibold text-zinc-200">كيف يعمل البوت</h3>
-                </div>
-                <ol className="space-y-1.5 text-[11px] leading-relaxed text-zinc-400">
-                  <li>
-                    <strong className="text-emerald-300">١.</strong> تضغط «دخول بـ Expert Option» → تفتح نافذة Expert Option.
-                  </li>
-                  <li>
-                    <strong className="text-emerald-300">٢.</strong> تدخل حسابك هناك كما تفعل عادةً.
-                  </li>
-                  <li>
-                    <strong className="text-emerald-300">٣.</strong> تنسخ أمر الـ Console وتلصقه هناك → ينسخ التوكن.
-                  </li>
-                  <li>
-                    <strong className="text-emerald-300">٤.</strong> تلصق التوكن هنا → يبدأ البوت بالتداول آلياً.
-                  </li>
-                </ol>
-              </div>
-
               {/* Footer */}
               <div className="flex items-center justify-center gap-2 text-[11px] text-zinc-500">
                 <span className="size-1.5 rounded-full bg-emerald-400" />
-                <span>ExpertBot Live — بوت تداول آلي</span>
+                <span>ExpertBot Live — دخول تلقائي عبر إضافة المتصفح</span>
               </div>
             </>
           )}
