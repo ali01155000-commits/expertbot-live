@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import QRCode from "qrcode";
 import {
   Bot,
   CheckCircle2,
@@ -10,8 +11,11 @@ import {
   LogIn,
   Monitor,
   Puzzle,
+  QrCode,
+  ScanLine,
   ShieldAlert,
   Trash2,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -74,6 +78,8 @@ export default function LoginScreen() {
   const [region, setRegion] = useState(() => loadSaved()?.region ?? "EUROPE");
   const [isDemo, setIsDemo] = useState(() => loadSaved()?.isDemo ?? true);
   const [extDetected, setExtDetected] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
 
   const connecting = useExpertStore((s) => s.connecting);
   const connectionError = useExpertStore((s) => s.connectionError);
@@ -187,6 +193,27 @@ export default function LoginScreen() {
     window.open("https://app.expertoption.com/", "_blank");
   };
 
+  /** Generate a QR code containing the app URL + token, so iPhone users can
+   *  scan it with their camera to transfer the session from desktop to phone. */
+  const showQrCode = async () => {
+    if (!token) return;
+    const appUrl =
+      typeof window !== "undefined" ? window.location.origin + "/" : "/";
+    const urlWithToken =
+      appUrl + (appUrl.includes("?") ? "&" : "?") + "token=" + encodeURIComponent(token);
+    try {
+      const dataUrl = await QRCode.toDataURL(urlWithToken, {
+        width: 320,
+        margin: 2,
+        color: { dark: "#0a0e14", light: "#10b981" },
+      });
+      setQrDataUrl(dataUrl);
+      setQrOpen(true);
+    } catch (e) {
+      console.error("QR generation failed:", e);
+    }
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0a0e14] text-zinc-100">
       {/* Animated grid background */}
@@ -240,13 +267,72 @@ export default function LoginScreen() {
                       اتصال مباشر
                     </Button>
                   </div>
-                  <button
-                    onClick={handleClearSaved}
-                    className="mt-2 flex items-center gap-1 text-[10px] text-zinc-500 hover:text-red-300 transition"
+                  <div className="mt-2 flex items-center gap-3">
+                    <button
+                      onClick={handleClearSaved}
+                      className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-red-300 transition"
+                    >
+                      <Trash2 className="size-3" />
+                      نسيان الحساب
+                    </button>
+                    <button
+                      onClick={showQrCode}
+                      className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-300 transition"
+                    >
+                      <QrCode className="size-3" />
+                      نقل للآيفون (QR)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* === QR Code modal (transfer session to iPhone) === */}
+              {qrOpen && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+                  onClick={() => setQrOpen(false)}
+                >
+                  <div
+                    className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#0a0e14] p-6 text-center"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Trash2 className="size-3" />
-                    نسيان الحساب المحفوظ
-                  </button>
+                    <button
+                      onClick={() => setQrOpen(false)}
+                      className="absolute left-3 top-3 rounded-lg p-1.5 text-zinc-400 hover:bg-white/5 hover:text-zinc-200 transition"
+                    >
+                      <X className="size-4" />
+                    </button>
+                    <div className="mb-3 flex items-center justify-center gap-2">
+                      <ScanLine className="size-5 text-emerald-400" />
+                      <h3 className="text-sm font-bold text-zinc-100">
+                        تسجيل دخول على الآيفون
+                      </h3>
+                    </div>
+                    {qrDataUrl && (
+                      <img
+                        src={qrDataUrl}
+                        alt="QR code for iPhone login"
+                        className="mx-auto rounded-xl border-4 border-emerald-400"
+                        width={280}
+                        height={280}
+                      />
+                    )}
+                    <div className="mt-4 space-y-1.5 text-[11px] leading-relaxed text-zinc-400">
+                      <p>
+                        <strong className="text-emerald-300">١.</strong> افتح{" "}
+                        <strong>الكاميرا</strong> على الآيفون
+                      </p>
+                      <p>
+                        <strong className="text-emerald-300">٢.</strong> وجّه الكاميرا نحو الـ QR code
+                      </p>
+                      <p>
+                        <strong className="text-emerald-300">٣.</strong> اضغط على الإشعار الذي يظهر ← يفتح التطبيق جاهزاً للتداول
+                      </p>
+                    </div>
+                    <p className="mt-3 text-[10px] text-zinc-500">
+                      بعد فتح التطبيق على الآيفون، أضفه للشاشة الرئيسية من زر المشاركة ← «Add to Home Screen»
+                    </p>
+                  </div>
                 </div>
               )}
 
