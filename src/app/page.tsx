@@ -14,6 +14,7 @@ import {
 
 import ActivityLog from "@/components/expert/ActivityLog";
 import ActivationScreen from "@/components/expert/ActivationScreen";
+import BinancePaymentScreen from "@/components/expert/BinancePaymentScreen";
 import AssetSelector from "@/components/expert/AssetSelector";
 import BotControlPanel from "@/components/expert/BotControlPanel";
 import CandlestickChart from "@/components/expert/CandlestickChart";
@@ -39,11 +40,17 @@ const TABS: { id: Tab; label: string; icon: typeof ChartIcon }[] = [
 export default function Home() {
   const connected = useExpertStore((s) => s.connected);
   const activated = useExpertStore((s) => s.activated);
+  const paid = useExpertStore((s) => s.paid);
   const [tab, setTab] = useState<Tab>("trade");
 
   // بوابة التفعيل: يجب إدخال كود تفعيل صالح أولاً
   if (!activated) {
     return <ActivationScreen />;
+  }
+
+  // بوابة الدفع: يجب دفع اشتراك 150$ قبل استخدام البوت
+  if (!paid) {
+    return <BinancePaymentScreen />;
   }
 
   if (!connected) {
