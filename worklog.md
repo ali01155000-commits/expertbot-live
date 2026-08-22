@@ -653,3 +653,42 @@ Work Log:
 
 Stage Summary:
 - DONE. Error was a transient HMR cache issue, not a code bug. Fixed by clearing .next + restarting dev server.
+
+---
+Task ID: 15
+Agent: orchestrator (main) — installation + bot usage guide
+Task: Add clear step-by-step instructions for extension install + bot usage
+
+Work Log:
+- Added 'دليل التثبيت الكامل' button in login screen header (always visible)
+- Built GuideModal component with 2 tabs:
+  Tab 1 'تثبيت الإضافة' (4 steps):
+    1. Download extension.zip (download button + copy URL button)
+    2. Unzip the file (right-click → Extract All)
+    3. Browser-specific install with Chrome/Firefox selector:
+       - Chrome/Edge: chrome://extensions → Developer mode → Load unpacked → select folder
+       - Firefox: about:debugging → This Firefox → Load Temporary Add-on → select manifest.json
+    4. Configure bot URL in extension popup (no code editing)
+  Tab 2 'تشغيل البوت' (6 steps):
+    1. Open Expert Option + login (extension auto-captures session)
+    2. App opens automatically with full dashboard
+    3. Choose bot settings (strategy, amount, expiry, martingale)
+    4. Start bot (green '▶ تشغيل البوت' button)
+    5. Manual trading (CALL/PUT buttons in 'تداول' tab)
+    6. Monitor trades (positions + history tabs)
+  + Tips section (demo first, small bets, watch first hour, martingale caution)
+  + Risk warning (financial risk, full responsibility)
+- ExtensionGuide + BotGuide sub-components (refactored for clarity)
+- Lint clean (0 errors)
+
+Verification (agent-browser):
+- 'دليل التثبيت الكامل' button present in header ✓
+- Clicked → modal opened with 2 tabs ✓
+- Tab 1 (extension): all 4 steps + Chrome steps visible by default ✓
+- Switched to Firefox → Firefox steps (about:debugging) visible ✓
+- Tab 2 (bot): all 6 steps + tips + risk warning visible ✓
+- Screenshots captured: guide-modal.png, guide-bot-tab.png
+
+Stage Summary:
+- DONE. Users now have a clear, step-by-step guide accessible from the login screen.
+- Covers both extension installation (Chrome/Firefox) and bot usage (start → monitor).
