@@ -698,8 +698,10 @@ function DesktopLoginSection(props: {
             </p>
             <div className="flex flex-wrap gap-2">
               <a
-                href="/extension.zip"
+                href={process.env.NEXT_PUBLIC_EXTENSION_URL || "/extension.zip"}
                 download
+                target={process.env.NEXT_PUBLIC_EXTENSION_URL ? "_blank" : undefined}
+                rel={process.env.NEXT_PUBLIC_EXTENSION_URL ? "noreferrer" : undefined}
                 className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
               >
                 <Download className="size-3.5" />

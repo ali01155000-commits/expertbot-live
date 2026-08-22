@@ -6,7 +6,7 @@
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      width: 300px;
+      width: 320px;
       margin: 0;
       padding: 16px;
       background: #0a0e14;
@@ -83,6 +83,14 @@
     .btn:hover {
       background: #34d399;
     }
+    .btn-secondary {
+      background: rgba(255,255,255,0.05);
+      color: #e4e4e7;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+    }
     .field {
       margin-top: 12px;
     }
@@ -101,11 +109,31 @@
       color: #e4e4e7;
       font-size: 12px;
       box-sizing: border-box;
+      font-family: monospace;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: rgba(16,185,129,0.5);
     }
     .hint {
       font-size: 10px;
       color: #52525b;
       margin-top: 6px;
+      line-height: 1.4;
+    }
+    .saved-indicator {
+      display: none;
+      font-size: 10px;
+      color: #10b981;
+      margin-top: 4px;
+    }
+    .saved-indicator.show {
+      display: block;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin: 12px 0;
     }
   </style>
 </head>
@@ -122,18 +150,28 @@
 
   <p>
     افتح <strong>app.expertoption.com</strong> وسجّل دخولك —
-    سيُلتقط التوكن تلقائياً ويفتح التطبيق جاهزاً للتداول.
+    سيُلتقط التوكن تلقائياً ويُفتح التطبيق جاهزاً للتداول.
   </p>
 
-  <a href="http://localhost:81/" target="_blank" class="btn">
-    فتح ExpertBot Live
+  <a href="#" id="openApp" target="_blank" class="btn">
+    فتح التطبيق
   </a>
 
+  <hr>
+
   <div class="field">
-    <label>رابط التطبيق (اختياري — اتركه فارغاً للقيمة الافتراضية)</label>
-    <input id="appUrl" type="text" placeholder="http://localhost:81/" />
-    <div class="hint">غيّره إذا رفعت التطبيق على استضافة مدفوعة.</div>
+    <label>رابط التطبيق (Bot URL)</label>
+    <input id="appUrl" type="text" placeholder="https://your-domain.com/" dir="ltr" />
+    <div class="hint">
+      غيّره ليناسب نطاقك عند نشر التطبيق على سيرفر مدفوع.
+      الإضافة تعمل مع أي نسخة من التطبيق.
+    </div>
+    <div class="saved-indicator" id="savedMsg">✓ تم الحفظ</div>
   </div>
+
+  <button class="btn btn-secondary" id="resetBtn" style="margin-top: 8px;">
+    استعادة الرابط الافتراضي
+  </button>
 
   <script src="popup.js"></script>
 </body>

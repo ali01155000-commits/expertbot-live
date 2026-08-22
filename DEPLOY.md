@@ -96,38 +96,53 @@ certbot --nginx -d your-domain.com -d www.your-domain.com
 
 ---
 
-## الخطوة 5: تحديث إضافة المتصفح
+## الخطوة 5: إضافة المتصفح (مستقلة عن البوت)
 
-بعد النشر، حدّث رابط التطبيق في الإضافة:
+### 📌 معلومة مهمة
+**الإضافة لا تحتاج رفعها مع البوت على السيرفر.** الإضافة تعيش في متصفح المستخدم
+(Chrome/Firefox)، ليست جزءاً من السيرفر. لكن تحتاج:
 
-1. افتح `extension/content.js`
-2. غيّر `DEFAULT_APP_URL` إلى نطاقك:
-   ```js
-   const DEFAULT_APP_URL = "https://your-domain.com/";
-   ```
-3. غيّر `extension/manifest.json` — أضف نطاقك لـ `host_permissions` و `externally_connectable`:
-   ```json
-   "host_permissions": [
-     "https://app.expertoption.com/*",
-     "https://your-domain.com/*"
-   ],
-   "externally_connectable": {
-     "matches": ["https://your-domain.com/*"]
-   }
-   ```
-4. اعمل commit + push:
+1. توزيع ملف `extension.zip` على المستخدمين (من أي مكان)
+2. تحديث نطاق البوت داخل الإضافة (من نافذة الإضافة نفسها — لا تعديل كود)
+
+### الخيار A: الإضافة تُحمّل من البوت (الأسهل — الافتراضي)
+لا تفعل شيئاً. البوت يخدم `extension.zip` من `/public/`. المستخدمون يحمّلونها من زر «تحميل الإضافة» في التطبيق.
+
+### الخيار B: الإضافة على GitHub Releases (مستقلة)
+1. اذهب لمستودع GitHub ← Releases ← «Create a new release»
+2. ارفع `extension.zip` كأصل (asset)
+3. انسخ رابط التحميل المباشر
+4. في `.env` على السيرفر:
    ```bash
-   git add extension/
-   git commit -m "Update extension for production domain"
-   git push
+   NEXT_PUBLIC_EXTENSION_URL=https://github.com/USERNAME/REPO/releases/download/v1.0/expertbot-extension.zip
    ```
-5. على الـ VPS، اسحب التحديث وأعد بناء الـ ZIP:
-   ```bash
-   cd /var/www/expertbot
-   git pull
-   cd extension && zip -r ../public/extension.zip . && cd ..
-   pm2 restart expertbot-web
-   ```
+5. أعد تشغيل البوت: `pm2 restart expertbot-web`
+
+### تحديث نطاق البوت داخل الإضافة (بدون تعديل كود)
+الإضافة مصممة ليُعدّل رابط البوت من نافذتها:
+1. اضغط أيقونة الإضافة في شريط المتصفح
+2. في حقل **«رابط التطبيق»**، أدخل: `https://your-domain.com/`
+3. يُحفظ تلقائياً ✓
+
+لا حاجة لتعديل `content.js` أو `manifest.json` — الرابط يُخزّن في `chrome.storage`.
+
+### (اختياري) تحديث `manifest.json` للنطاقات المسموحة
+إذا أردت استخدام `externally_connectable` (للكشف التلقائي لتثبيت الإضافة):
+```json
+"host_permissions": [
+  "https://app.expertoption.com/*",
+  "https://your-domain.com/*"
+],
+"externally_connectable": {
+  "matches": ["https://your-domain.com/*"]
+}
+```
+ثم أعد بناء `extension.zip`:
+```bash
+cd extension
+./build.sh
+# أو يدوياً: zip -r expertbot-extension.zip . -x "build.sh" "README.md"
+```
 
 ---
 
