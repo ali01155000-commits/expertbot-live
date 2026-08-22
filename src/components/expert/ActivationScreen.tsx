@@ -75,11 +75,18 @@ export default function ActivationScreen() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
         <div className="w-full max-w-md space-y-5">
+          {/* Hero image */}
+          <div className="relative mx-auto flex justify-center">
+            <div className="absolute inset-0 -z-10 blur-3xl bg-emerald-500/20 rounded-full" />
+            <img
+              src="/bot-hero.png"
+              alt="ExpertBot AI"
+              className="size-44 rounded-2xl object-cover ring-2 ring-emerald-500/30 shadow-[0_0_60px_-10px_rgba(16,185,129,0.5)]"
+            />
+          </div>
+
           {/* Header */}
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="flex size-16 items-center justify-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/30 shadow-[0_0_40px_-5px_rgba(16,185,129,0.4)]">
-              <Bot className="size-8 text-emerald-400" />
-            </div>
+          <div className="flex flex-col items-center gap-2 text-center">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
                 Expert<span className="text-emerald-400">Bot</span> Live
