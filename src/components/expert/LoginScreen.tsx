@@ -566,9 +566,20 @@ function IPhoneSetupGuide({ appUrl }: { appUrl: string }) {
       </div>
 
       <p className="mb-4 text-[12px] leading-relaxed text-zinc-400">
-        آيفون لا يدعم إضافات المتصفح. للحصول على التوكن، تحتاج كمبيوتر واحد
-        مرة واحدة فقط، ثم تنقل الجلسة للآيفون عبر QR code.
+        <strong className="text-amber-300">مهم:</strong> آيفون لا يدعم أدوات المطور
+        (F12) ولا إضافات المتصفح. لذلك تحتاج <strong className="text-emerald-300">كمبيوتر
+        لمرة واحدة فقط</strong> للحصول على التوكن، ثم تنقله للآيفون عبر QR code.
+        بعد ذلك، تستخدم الآيفون دائماً بدون كمبيوتر.
       </p>
+
+      {/* Info box */}
+      <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-500/30 bg-sky-500/[0.08] p-3">
+        <Smartphone className="size-4 shrink-0 mt-0.5 text-sky-400" />
+        <div className="text-[11px] leading-relaxed text-sky-200">
+          <strong>لماذا؟</strong> آبل تمنع المواقع من قراءة بيانات Expert Option
+          لأسباب أمنية. الحل الوحيد: نقل الجلسة من كمبيوتر للآيفون.
+        </div>
+      </div>
 
       {/* Step 1: open on computer */}
       <div className="space-y-4">
