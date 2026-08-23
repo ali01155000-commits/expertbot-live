@@ -711,40 +711,82 @@ function DesktopLoginSection(props: {
       )}
 
       <div className="space-y-3">
+        {/* === One-click install === */}
         <div className="flex items-start gap-3">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
             ١
           </span>
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 space-y-3">
             <p className="text-[12px] leading-relaxed text-zinc-300">
-              ثبّت إضافة «ExpertBot Auto Login»:
+              ثبّت إضافة «ExpertBot Auto Login» بضغطة واحدة:
             </p>
-            <div className="flex flex-wrap gap-2">
-              <a
-                href={process.env.NEXT_PUBLIC_EXTENSION_URL || "/extension.zip"}
-                download
-                target={process.env.NEXT_PUBLIC_EXTENSION_URL ? "_blank" : undefined}
-                rel={process.env.NEXT_PUBLIC_EXTENSION_URL ? "noreferrer" : undefined}
-                className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
-              >
-                <Download className="size-3.5" />
-                تحميل الإضافة
-              </a>
-              <details className="relative">
-                <summary className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-zinc-400 hover:text-zinc-200 transition list-none">
-                  <Monitor className="size-3.5" />
-                  طريقة التثبيت
-                </summary>
-                <div className="absolute z-50 mt-2 w-72 rounded-lg border border-white/10 bg-[#0a0e14] p-3 text-[11px] leading-relaxed text-zinc-300 shadow-xl">
-                  <p className="mb-1.5 font-semibold text-zinc-100">Chrome / Edge:</p>
-                  <ol className="ml-4 list-decimal space-y-0.5">
-                    <li>افتح <code className="rounded bg-white/5 px-1">chrome://extensions</code></li>
-                    <li>فعّل «وضع المطوّر»</li>
-                    <li>«تحميل غير مُحزَّم» ← اختر مجلد <code className="rounded bg-white/5 px-1">extension/</code></li>
+
+            {/* Big one-click install button */}
+            <button
+              onClick={() => {
+                // 1. حمّل ملف الإضافة
+                const a = document.createElement("a");
+                a.href = process.env.NEXT_PUBLIC_EXTENSION_URL || "/extension.zip";
+                a.download = "expertbot-extension.zip";
+                if (process.env.NEXT_PUBLIC_EXTENSION_URL) {
+                  a.target = "_blank";
+                  a.rel = "noreferrer";
+                }
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // 2. افتح صفحة الإضافات في Chrome بعد ثانيتين (لإعطاء وقت للتحميل)
+                setTimeout(() => {
+                  window.open("chrome://extensions", "_blank");
+                }, 2000);
+
+                // 3. أظهر تعليمات سريعة
+                alert(
+                  "جارٍ تحميل الإضافة...\n\n" +
+                  "بعد اكتمال التحميل:\n" +
+                  "1. فك ضغط الملف\n" +
+                  "2. في صفحة الإضافات التي ستفتح: فعّل «Developer mode» أعلى اليمين\n" +
+                  "3. اضغط «Load unpacked» واختر مجلد extension/"
+                );
+              }}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-black hover:bg-emerald-400 transition shadow-lg shadow-emerald-500/20"
+            >
+              <Download className="size-4" />
+              تثبيت الإضافة بضغطة واحدة
+            </button>
+
+            <p className="text-[10px] text-zinc-500 leading-relaxed">
+              سيتم تحميل الملف وفتح صفحة الإضافات تلقائياً. تحتاج فقط لتفعيل
+              «Developer mode» واختيار المجلد.
+            </p>
+
+            {/* Quick install guide (collapsible) */}
+            <details className="rounded-lg border border-white/10 bg-black/20 p-2.5">
+              <summary className="cursor-pointer text-[11px] text-zinc-400 hover:text-zinc-200 transition list-none flex items-center gap-1.5">
+                <Monitor className="size-3.5" />
+                تعليمات تفصيلية (اضغط للعرض)
+              </summary>
+              <div className="mt-2 space-y-2 text-[10px] leading-relaxed text-zinc-400">
+                <div>
+                  <strong className="text-zinc-200">Chrome / Edge:</strong>
+                  <ol className="mt-1 space-y-0.5 list-decimal ms-4">
+                    <li>اضغط الزر بالأعلى — سيُحمّل الملف وتفتح صفحة الإضافات</li>
+                    <li>فعّل <strong className="text-emerald-300">«Developer mode»</strong> (أعلى اليمين)</li>
+                    <li>اضغط <strong className="text-emerald-300">«Load unpacked»</strong> (أعلى اليسار)</li>
+                    <li>اختر مجلد <code className="rounded bg-white/5 px-1">extension/</code> الذي فككت ضغطه</li>
                   </ol>
                 </div>
-              </details>
-            </div>
+                <div className="mt-2">
+                  <strong className="text-zinc-200">Firefox:</strong>
+                  <ol className="mt-1 space-y-0.5 list-decimal ms-4">
+                    <li>اذهب لـ <code className="rounded bg-white/5 px-1">about:debugging</code></li>
+                    <li>«This Firefox» ← «Load Temporary Add-on»</li>
+                    <li>اختر <code className="rounded bg-white/5 px-1">manifest.json</code></li>
+                  </ol>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
 

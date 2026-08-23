@@ -8,7 +8,9 @@
     "https://app.expertoption.com/*",
     "http://localhost/*",
     "http://localhost:81/*",
-    "http://localhost:3000/*"
+    "http://localhost:3000/*",
+    "http://76.13.40.219/*",
+    "http://76.13.40.219:9000/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -37,7 +39,9 @@
     "matches": [
       "http://localhost/*",
       "http://localhost:81/*",
-      "http://localhost:3000/*"
+      "http://localhost:3000/*",
+      "http://76.13.40.219/*",
+      "http://76.13.40.219:9000/*"
     ]
   }
 }
