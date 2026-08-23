@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  expertbot-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: expertbot-web
+    restart: always
+    ports:
+      - "9000:80"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:./db/expertbot.db
+      - ADMIN_KEY=expertbot-admin-2024
+      - SOCKET_PATH=/socket.io
+      - EXPERT_SERVICE_PORT=3003
+      - NEXT_PUBLIC_EXPERT_SERVICE_URL=http://alfa-option.com
+    volumes:
+      - ./db:/app/db
+      - ./public:/app/public
+    networks:
+      - expertbot-net
+
+  expertbot-service:
+    image: oven/bun:1
+    container_name: expertbot-service
+    restart: always
+    working_dir: /app
+    command: bun run dev
+    environment:
+      - NODE_ENV=production
+      - SOCKET_PATH=/socket.io
+      - EXPERT_SERVICE_PORT=3003
+    volumes:
+      - ./mini-services/expert-service:/app
+      - /app/node_modules
+    networks:
+      - expertbot-net
+    depends_on:
+      - expertbot-web
+
+networks:
+  expertbot-net:
+    driver: bridge
