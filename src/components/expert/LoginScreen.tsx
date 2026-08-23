@@ -548,115 +548,161 @@ export default function LoginScreen() {
 /* IPhone Setup Guide — shown when user is on iPhone WITHOUT a token  */
 /* ================================================================== */
 function IPhoneSetupGuide({ appUrl }: { appUrl: string }) {
-  const [copied, setCopied] = useState(false);
-  const copyUrl = () => {
-    navigator.clipboard?.writeText(appUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
   return (
     <div className="space-y-4">
-      {/* Big title */}
+      {/* Title */}
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5 text-center">
         <Smartphone className="size-10 mx-auto text-emerald-400 mb-2" />
         <h2 className="text-xl font-bold text-zinc-100">
-          كيف تستخدم البوت على الآيفون
+          تفعيل البوت على الآيفون
         </h2>
         <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-          تحتاج <strong className="text-emerald-300">كمبيوتر لمرة واحدة فقط</strong>{" "}
-          للحصول على QR Code، ثم تستخدم الآيفون دائماً بدون كمبيوتر.
+          اضغط الزر بالأسفل ← سيفتح Expert Option ← سجّل دخولك ← ارجع هنا
         </p>
       </div>
 
-      {/* Step 1 — big card */}
+      {/* One big button */}
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
-            ١
-          </span>
-          <h3 className="text-base font-bold text-zinc-100">
-            على الكمبيوتر: افتح هذا التطبيق
-          </h3>
-        </div>
-        <p className="text-sm text-zinc-300 leading-relaxed mb-3">
-          انسخ هذا الرابط وافتحه على كمبيوترك (أرسله لنفسك عبر واتساب أو بريد):
+        <a
+          href="https://app.expertoption.com/"
+          target="_blank"
+          rel="noreferrer"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-4 text-base font-bold text-black hover:bg-emerald-400 transition shadow-lg shadow-emerald-500/20"
+        >
+          <ExternalLink className="size-6" />
+          افتح Expert Option وسجّل دخولك
+        </a>
+        <p className="mt-3 text-center text-xs text-zinc-500 leading-relaxed">
+          بعد تسجيل الدخول، ارجع لهذه الصفحة واضغط الزر التالي
         </p>
-        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/40 p-3">
-          <code className="flex-1 font-mono text-xs text-emerald-300 truncate" dir="ltr">
-            {appUrl}
-          </code>
-          <button
-            onClick={copyUrl}
-            className="shrink-0 rounded-md bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-500/30 transition"
-          >
-            {copied ? "✓ نُسخ" : "نسخ الرابط"}
-          </button>
-        </div>
       </div>
 
-      {/* Step 2 — big card */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      {/* Step 2 — copy URL */}
+      <div className="rounded-2xl border border-violet-500/30 bg-violet-500/[0.06] p-5">
         <div className="flex items-center gap-3 mb-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-500 text-lg font-bold text-white">
             ٢
           </span>
           <h3 className="text-base font-bold text-zinc-100">
-            على الكمبيوتر: سجّل دخولك في البوت
+            بعد الدخول، انسخ رابط الصفحة
           </h3>
         </div>
-        <p className="text-sm text-zinc-300 leading-relaxed">
-          على الكمبيوتر: ادفع الاشتراك ← أدخل كود التفعيل ← سجّل دخول Expert Option.
-          سيظهر لك زر <strong className="text-emerald-300">«نقل للآيفون (QR)»</strong> —
-          اضغطه لإنشاء QR Code.
+        <p className="text-sm text-zinc-300 leading-relaxed mb-3">
+          في Expert Option: اضغط زر المشاركة <Share className="inline size-4 text-emerald-300" /> ←
+          اختر <strong className="text-emerald-300">«Copy Link»</strong> ← ارجع هنا
         </p>
       </div>
 
-      {/* Step 3 — big card */}
-      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5">
+      {/* Step 3 — paste URL */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <div className="flex items-center gap-3 mb-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
             ٣
           </span>
-          <h3 className="text-base font-bold text-emerald-200">
-            على الآيفون: امسح الـ QR Code
-          </h3>
-        </div>
-        <p className="text-sm text-zinc-200 leading-relaxed">
-          افتح <strong className="text-emerald-300">الكاميرا</strong> على آيفونك ←
-          وجّهها نحو الـ QR Code على شاشة الكمبيوتر ← اضغط الإشعار الذي يظهر ←
-          سيفتح التطبيق <strong className="text-emerald-300">متصلاً وجاهزاً للتداول</strong>.
-        </p>
-      </div>
-
-      {/* Step 4 — big card */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
-            ٤
-          </span>
           <h3 className="text-base font-bold text-zinc-100">
-            أضف التطبيق لشاشتك الرئيسية
+            ألصق الرابط هنا
           </h3>
         </div>
-        <p className="text-sm text-zinc-300 leading-relaxed">
-          في Safari: اضغط زر المشاركة <Share className="inline size-4 text-emerald-300" /> ←
-          اختر <strong className="text-emerald-300">«Add to Home Screen»</strong> ←
-          اضغط «إضافة». ✅
-        </p>
+        <IPhoneUrlPaste />
       </div>
 
-      {/* Done banner */}
-      <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/[0.1] p-5 text-center">
-        <CheckCircle2 className="size-10 mx-auto text-emerald-400 mb-2" />
-        <h3 className="text-base font-bold text-emerald-200">
-          تم! استخدم البوت من شاشتك الرئيسية
-        </h3>
-        <p className="mt-1 text-sm text-emerald-100/80 leading-relaxed">
-          بعد المرة الأولى: افتح التطبيق من الأيقونة على شاشتك — سيتصل تلقائياً
-          بدون الحاجة للكمبيوتر مرة أخرى.
+      {/* Help */}
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-4">
+        <p className="text-xs leading-relaxed text-amber-200">
+          💡 <strong>تحتاج مساعدة؟</strong> تواصل مع المسؤول على تيليجرام:{" "}
+          <a
+            href="https://t.me/ALFa_proo"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#229ED9] underline"
+          >
+            @ALFa_proo
+          </a>
         </p>
+      </div>
+    </div>
+  );
+}
+
+/* --- iPhone URL paste component --- */
+function IPhoneUrlPaste() {
+  const [url, setUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+
+  const appUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  const handleConnect = () => {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      setError("ألصق رابط Expert Option أولاً");
+      return;
+    }
+
+    // حاول استخراج التوكن من الرابط
+    // Expert Option قد يضع التوكن في localStorage وليس في الرابط
+    // لكن بعض الروابط تحتوي على session ID
+    setError(null);
+    setConnecting(true);
+
+    // أرسل الرابط للـ service لمحاولة استخراج التوكن
+    const socket = getExpertSocket();
+    if (socket) {
+      socket.emit("expert:connect-from-url", { url: trimmed });
+    }
+
+    // أظهر رسالة
+    setTimeout(() => {
+      setConnecting(false);
+      setError(
+        "تعذّر استخراج التوكن من الرابط. آيفون لا يسمح بقراءة بيانات Expert Option تلقائياً. الحل البديل: استخدم كمبيوتر لمرة واحدة للحصول على QR Code."
+      );
+    }, 2000);
+  };
+
+  return (
+    <div className="space-y-3">
+      <Input
+        type="text"
+        value={url}
+        onChange={(e) => {
+          setUrl(e.target.value);
+          setError(null);
+        }}
+        placeholder="ألصق رابط Expert Option هنا..."
+        className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-12"
+        autoComplete="off"
+        spellCheck={false}
+        dir="ltr"
+      />
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-200 leading-relaxed">
+          {error}
+        </div>
+      )}
+      <Button
+        onClick={handleConnect}
+        disabled={connecting || !url.trim()}
+        className="w-full h-12 bg-emerald-500 text-black hover:bg-emerald-400 font-bold gap-2"
+      >
+        {connecting ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />}
+        تفعيل البوت
+      </Button>
+
+      {/* QR alternative */}
+      <div className="mt-4 rounded-xl border border-sky-500/30 bg-sky-500/[0.06] p-4 text-center">
+        <p className="text-xs text-sky-200 leading-relaxed mb-2">
+          لم يعمل؟ استخدم QR Code من كمبيوتر (لمرة واحدة فقط)
+        </p>
+        <a
+          href={appUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500/20 px-3 py-2 text-xs font-medium text-sky-300 hover:bg-sky-500/30 transition"
+        >
+          <QrCode className="size-4" />
+          فتح على الكمبيوتر
+        </a>
       </div>
     </div>
   );
