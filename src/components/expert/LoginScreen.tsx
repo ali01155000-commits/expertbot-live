@@ -557,117 +557,105 @@ function IPhoneSetupGuide({ appUrl }: { appUrl: string }) {
   };
 
   return (
-    <div className="rounded-2xl border border-emerald-500/30 bg-white/[0.03] p-6 shadow-2xl backdrop-blur-xl">
-      <div className="mb-4 flex items-center gap-2">
-        <Smartphone className="size-5 text-emerald-400" />
-        <h2 className="text-base font-semibold text-zinc-100">
-          إعداد التطبيق على الآيفون
+    <div className="space-y-4">
+      {/* Big title */}
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5 text-center">
+        <Smartphone className="size-10 mx-auto text-emerald-400 mb-2" />
+        <h2 className="text-xl font-bold text-zinc-100">
+          كيف تستخدم البوت على الآيفون
         </h2>
+        <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+          تحتاج <strong className="text-emerald-300">كمبيوتر لمرة واحدة فقط</strong>{" "}
+          للحصول على QR Code، ثم تستخدم الآيفون دائماً بدون كمبيوتر.
+        </p>
       </div>
 
-      <p className="mb-4 text-[12px] leading-relaxed text-zinc-400">
-        <strong className="text-amber-300">مهم:</strong> آيفون لا يدعم أدوات المطور
-        (F12) ولا إضافات المتصفح. لذلك تحتاج <strong className="text-emerald-300">كمبيوتر
-        لمرة واحدة فقط</strong> للحصول على التوكن، ثم تنقله للآيفون عبر QR code.
-        بعد ذلك، تستخدم الآيفون دائماً بدون كمبيوتر.
-      </p>
-
-      {/* Info box */}
-      <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-sky-500/30 bg-sky-500/[0.08] p-3">
-        <Smartphone className="size-4 shrink-0 mt-0.5 text-sky-400" />
-        <div className="text-[11px] leading-relaxed text-sky-200">
-          <strong>لماذا؟</strong> آبل تمنع المواقع من قراءة بيانات Expert Option
-          لأسباب أمنية. الحل الوحيد: نقل الجلسة من كمبيوتر للآيفون.
-        </div>
-      </div>
-
-      {/* Step 1: open on computer */}
-      <div className="space-y-4">
-        <div className="flex items-start gap-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[13px] font-bold text-emerald-400">
+      {/* Step 1 — big card */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
             ١
           </span>
-          <div className="flex-1 space-y-2">
-            <p className="text-[12px] leading-relaxed text-zinc-300">
-              على <strong className="text-emerald-300">كمبيوتر</strong>، افتح نفس
-              هذا التطبيق في المتصفح:
-            </p>
-            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/40 p-2.5">
-              <code className="flex-1 font-mono text-[11px] text-emerald-300 truncate" dir="ltr">
-                {appUrl}
-              </code>
-              <button
-                onClick={copyUrl}
-                className="shrink-0 rounded-md bg-emerald-500/15 px-2.5 py-1 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/25 transition"
-              >
-                {copied ? "✓ نُسخ" : "نسخ"}
-              </button>
-            </div>
-            <p className="text-[10px] text-zinc-500">
-              أرسل الرابط لنفسك (واتساب، بريد) وافتحه على الكمبيوتر
-            </p>
-          </div>
+          <h3 className="text-base font-bold text-zinc-100">
+            على الكمبيوتر: افتح هذا التطبيق
+          </h3>
         </div>
-
-        {/* Step 2: login on computer */}
-        <div className="flex items-start gap-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[13px] font-bold text-emerald-400">
-            ٢
-          </span>
-          <div className="flex-1">
-            <p className="text-[12px] leading-relaxed text-zinc-300">
-              على الكمبيوتر: ثبّت إضافة المتصفح ← افتح Expert Option ← سجل دخولك.
-              سيُلتقط التوكن تلقائياً ويفتح التطبيق.
-            </p>
-          </div>
-        </div>
-
-        {/* Step 3: transfer via QR */}
-        <div className="flex items-start gap-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[13px] font-bold text-emerald-400">
-            ٣
-          </span>
-          <div className="flex-1">
-            <p className="text-[12px] leading-relaxed text-zinc-300">
-              على الكمبيوتر: اضغط زر <strong className="text-emerald-300">«نقل للآيفون (QR)»</strong>{" "}
-              ← سيظهر QR code على الشاشة.
-            </p>
-          </div>
-        </div>
-
-        {/* Step 4: scan with iPhone */}
-        <div className="flex items-start gap-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[13px] font-bold text-emerald-400">
-            ٤
-          </span>
-          <div className="flex-1">
-            <p className="text-[12px] leading-relaxed text-zinc-300">
-              على هذا الآيفون: افتح <strong className="text-emerald-300">الكاميرا</strong>{" "}
-              ← وجّهها للـ QR code ← اضغط الإشعار ← يفتح التطبيق متصلاً.
-            </p>
-          </div>
-        </div>
-
-        {/* Step 5: add to home screen */}
-        <div className="flex items-start gap-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[13px] font-bold text-emerald-400">
-            ٥
-          </span>
-          <div className="flex-1">
-            <p className="text-[12px] leading-relaxed text-zinc-300">
-              اضغط زر <Share className="inline size-3 text-emerald-300" /> المشاركة
-              في Safari ← <strong className="text-emerald-300">«Add to Home Screen»</strong> ←
-              أصبح التطبيق على شاشتك الرئيسية كتطبيق أصلي.
-            </p>
-          </div>
+        <p className="text-sm text-zinc-300 leading-relaxed mb-3">
+          انسخ هذا الرابط وافتحه على كمبيوترك (أرسله لنفسك عبر واتساب أو بريد):
+        </p>
+        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/40 p-3">
+          <code className="flex-1 font-mono text-xs text-emerald-300 truncate" dir="ltr">
+            {appUrl}
+          </code>
+          <button
+            onClick={copyUrl}
+            className="shrink-0 rounded-md bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-500/30 transition"
+          >
+            {copied ? "✓ نُسخ" : "نسخ الرابط"}
+          </button>
         </div>
       </div>
 
-      <div className="mt-4 flex items-start gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-3">
-        <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-400" />
-        <p className="text-[11px] leading-relaxed text-emerald-200/80">
-          بعد المرة الأولى: التوكن يُحفظ على الآيفون — لا حاجة للكمبيوتر مرة أخرى.
-          افتح التطبيق من الشاشة الرئيسية ويتصل تلقائياً.
+      {/* Step 2 — big card */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
+            ٢
+          </span>
+          <h3 className="text-base font-bold text-zinc-100">
+            على الكمبيوتر: سجّل دخولك في البوت
+          </h3>
+        </div>
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          على الكمبيوتر: ادفع الاشتراك ← أدخل كود التفعيل ← سجّل دخول Expert Option.
+          سيظهر لك زر <strong className="text-emerald-300">«نقل للآيفون (QR)»</strong> —
+          اضغطه لإنشاء QR Code.
+        </p>
+      </div>
+
+      {/* Step 3 — big card */}
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
+            ٣
+          </span>
+          <h3 className="text-base font-bold text-emerald-200">
+            على الآيفون: امسح الـ QR Code
+          </h3>
+        </div>
+        <p className="text-sm text-zinc-200 leading-relaxed">
+          افتح <strong className="text-emerald-300">الكاميرا</strong> على آيفونك ←
+          وجّهها نحو الـ QR Code على شاشة الكمبيوتر ← اضغط الإشعار الذي يظهر ←
+          سيفتح التطبيق <strong className="text-emerald-300">متصلاً وجاهزاً للتداول</strong>.
+        </p>
+      </div>
+
+      {/* Step 4 — big card */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
+            ٤
+          </span>
+          <h3 className="text-base font-bold text-zinc-100">
+            أضف التطبيق لشاشتك الرئيسية
+          </h3>
+        </div>
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          في Safari: اضغط زر المشاركة <Share className="inline size-4 text-emerald-300" /> ←
+          اختر <strong className="text-emerald-300">«Add to Home Screen»</strong> ←
+          اضغط «إضافة». ✅
+        </p>
+      </div>
+
+      {/* Done banner */}
+      <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/[0.1] p-5 text-center">
+        <CheckCircle2 className="size-10 mx-auto text-emerald-400 mb-2" />
+        <h3 className="text-base font-bold text-emerald-200">
+          تم! استخدم البوت من شاشتك الرئيسية
+        </h3>
+        <p className="mt-1 text-sm text-emerald-100/80 leading-relaxed">
+          بعد المرة الأولى: افتح التطبيق من الأيقونة على شاشتك — سيتصل تلقائياً
+          بدون الحاجة للكمبيوتر مرة أخرى.
         </p>
       </div>
     </div>
@@ -691,200 +679,164 @@ function DesktopLoginSection(props: {
   onShowQr: () => void;
 }) {
   const {
+    token,
     extDetected,
     connecting,
+    connectionError,
+    showManual,
+    manualToken,
+    setShowManual,
+    setManualToken,
+    onManualConnect,
     onOpenExpertOption,
+    onShowQr,
   } = props;
-
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-2xl backdrop-blur-xl">
-      <div className="mb-4 flex items-center gap-2">
-        <LogIn className="size-5 text-emerald-400" />
-        <h2 className="text-base font-semibold text-zinc-100">
-          تسجيل الدخول إلى Expert Option
-        </h2>
-      </div>
-
-      {/* Extension status */}
-      {extDetected ? (
-        <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3">
-          <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
-          <span className="text-[12px] font-medium text-emerald-200">
-            الإضافة مُثبّتة وفعّالة — افتح Expert Option وسجّل دخولك
-          </span>
-        </div>
-      ) : null}
-
-      <div className="space-y-3">
-        {/* Step 1: open Expert Option */}
-        <div className="flex items-start gap-3">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
-            ١
-          </span>
-          <div className="flex-1 space-y-2">
-            <p className="text-[12px] leading-relaxed text-zinc-300">
-              افتح Expert Option وسجّل دخولك بحسابك:
-            </p>
-            <Button
-              onClick={onOpenExpertOption}
-              className="w-full h-12 gap-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold"
-            >
-              <ExternalLink className="size-4" />
-              فتح Expert Option
-            </Button>
-          </div>
-        </div>
-
-        {/* Step 2: auto-grab token (no extension needed) */}
-        {!extDetected && (
-          <div className="flex items-start gap-3">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
-              ٢
-            </span>
-            <div className="flex-1 space-y-2">
-              <p className="text-[12px] leading-relaxed text-zinc-300">
-                بعد تسجيل دخولك، ارجع هنا واضغط هذا الزر — سيلتقط التوكن تلقائياً:
-              </p>
-              <AutoGrabToken />
-              <p className="text-[10px] text-zinc-500 leading-relaxed">
-                بدون إضافات — يعمل على أي متصفح. سيُنسخ أمر تلقائياً، يفتح Console
-                في Expert Option، ويلصقه لك.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3 (if extension detected) */}
-        {extDetected && (
-          <div className="flex items-start gap-3">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
-              ٢
-            </span>
-            <div className="flex-1">
-              <p className="text-[12px] leading-relaxed text-zinc-300">
-                بمجرد دخولك في Expert Option، الإضافة ستلتقط الجلسة تلقائياً
-                ويفتح التطبيق جاهزاً للتداول.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Manual fallback */}
-        <div className="flex items-start gap-3">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[12px] font-bold text-emerald-400">
-            !
-          </span>
-          <div className="flex-1 space-y-2">
-            <p className="text-[12px] leading-relaxed text-zinc-300">
-              أو أدخل التوكن يدوياً (احتياطي):
-            </p>
-            <AutoGrabToken manualOnly />
-          </div>
-        </div>
-
-        {connecting && (
-          <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.08] p-3">
-            <Loader2 className="size-4 animate-spin text-emerald-400 shrink-0" />
-            <span className="text-[12px] text-emerald-200">
-              جارٍ الاتصال بـ Expert Option…
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* --- Auto-grab token button (no extension needed) --- */
-function AutoGrabToken({ manualOnly }: { manualOnly?: boolean }) {
-  const [copied, setCopied] = useState(false);
-  const [manualToken, setManualToken] = useState("");
 
   const CONSOLE_CMD =
     "copy(JSON.parse(localStorage.getItem('auth')||'{}').token||Object.values(localStorage).find(v=>/^[a-f0-9]{24,}$/i.test(v)))";
+  const [copied, setCopied] = useState(false);
 
   const grabToken = () => {
-    // 1. انسخ الأمر للحافظة
     navigator.clipboard?.writeText(CONSOLE_CMD).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     });
-
-    // 2. افتح Expert Option في تبويب جديد
-    const eo = window.open("https://app.expertoption.com/", "_blank");
-
-    // 3. أظهر تعليمات
+    window.open("https://app.expertoption.com/", "_blank");
     alert(
       "تم نسخ أمر الالتقاط!\n\n" +
-      "الخطوات (3 فقط):\n" +
-      "1. في صفحة Expert Option التي فتحت: اضغط F12\n" +
-      "2. اضغط Console\n" +
-      "3. اضغط Ctrl+V ثم Enter — سيُنسخ التوكن للحافظة\n\n" +
-      "ثم ارجع هنا والصق التوكن في الحقل بالأسفل."
+        "في صفحة Expert Option التي فتحت:\n" +
+        "1. اضغط F12\n" +
+        "2. اضغط Console\n" +
+        "3. اضغط Ctrl+V ثم Enter — سيُنسخ التوكن"
     );
-
-    // Focus back on our app after 5 seconds
-    setTimeout(() => {
-      window.focus();
-    }, 5000);
   };
 
   return (
-    <div className="space-y-2">
-      {!manualOnly && (
+    <div className="space-y-4">
+      {/* Title */}
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5 text-center">
+        <LogIn className="size-10 mx-auto text-emerald-400 mb-2" />
+        <h2 className="text-xl font-bold text-zinc-100">
+          تسجيل الدخول إلى Expert Option
+        </h2>
+        <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+          3 خطوات بسيطة — بدون تثبيت أي إضافات
+        </p>
+      </div>
+
+      {/* Step 1 */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
+            ١
+          </span>
+          <h3 className="text-base font-bold text-zinc-100">
+            افتح Expert Option وسجّل دخولك
+          </h3>
+        </div>
+        <Button
+          onClick={onOpenExpertOption}
+          className="w-full h-12 gap-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold"
+        >
+          <ExternalLink className="size-5" />
+          فتح Expert Option
+        </Button>
+      </div>
+
+      {/* Step 2 */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
+            ٢
+          </span>
+          <h3 className="text-base font-bold text-zinc-100">
+            التقط التوكن تلقائياً
+          </h3>
+        </div>
+        <p className="text-sm text-zinc-400 mb-3 leading-relaxed">
+          بعد تسجيل دخولك في Expert Option، ارجع هنا واضغط هذا الزر:
+        </p>
         <button
           onClick={grabToken}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 text-sm font-bold text-white hover:bg-violet-400 transition shadow-lg shadow-violet-500/20"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 text-sm font-bold text-white hover:bg-violet-400 transition"
         >
-          <Zap className="size-4" />
-          {copied ? "✓ نُسخ الأمر — اتبع التعليمات" : "التقط التوكن تلقائياً"}
+          <Zap className="size-5" />
+          {copied ? "✓ نُسخ — اتبع التعليمات" : "التقط التوكن تلقائياً"}
         </button>
-      )}
+        <p className="mt-2 text-xs text-zinc-500 leading-relaxed">
+          سيُنسخ أمر + تفتح صفحة Expert Option. اضغط F12 → Console → Ctrl+V → Enter
+        </p>
+      </div>
 
-      {/* Manual paste field */}
-      <div className="relative">
+      {/* Step 3 — paste token */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
+            ٣
+          </span>
+          <h3 className="text-base font-bold text-zinc-100">
+            ألصق التوكن هنا
+          </h3>
+        </div>
         <Input
           type="text"
           value={manualToken}
           onChange={(e) => setManualToken(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && manualToken.trim()) {
-              useExpertStore.getState().setConnectionError(null);
-              useExpertStore.getState().setConnecting(true);
-              const socket = getExpertSocket();
-              socket?.emit("expert:connect", {
-                token: manualToken.trim(),
-                region: "EUROPE",
-                isDemo: true,
-              });
-            }
+            if (e.key === "Enter" && manualToken.trim()) onManualConnect();
           }}
-          placeholder="ألصق التوكن هنا بعد نسخه..."
-          className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-11"
+          placeholder="ألصق التوكن هنا..."
+          className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-12"
           autoComplete="off"
           spellCheck={false}
           dir="ltr"
         />
+        <Button
+          onClick={onManualConnect}
+          disabled={connecting || !manualToken.trim()}
+          className="w-full h-12 mt-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold gap-2"
+        >
+          {connecting ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />}
+          اتصال وبدء التداول
+        </Button>
       </div>
 
-      {manualToken.trim() && (
-        <Button
-          onClick={() => {
-            useExpertStore.getState().setConnectionError(null);
-            useExpertStore.getState().setConnecting(true);
-            const socket = getExpertSocket();
-            socket?.emit("expert:connect", {
-              token: manualToken.trim(),
-              region: "EUROPE",
-              isDemo: true,
-            });
-          }}
-          disabled={useExpertStore.getState().connecting}
-          className="w-full h-11 bg-emerald-500 text-black hover:bg-emerald-400 font-semibold gap-2"
-        >
-          <LogIn className="size-4" />
-          اتصال
-        </Button>
+      {/* Transfer to iPhone (if token exists) */}
+      {token && (
+        <div className="rounded-2xl border border-sky-500/30 bg-sky-500/[0.06] p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <Smartphone className="size-6 text-sky-400" />
+            <h3 className="text-base font-bold text-sky-200">
+              لديك آيفون؟ انقل الجلسة إليه
+            </h3>
+          </div>
+          <p className="text-sm text-zinc-300 mb-3 leading-relaxed">
+            اضغط الزر بالأسفل لإنشاء QR Code، ثم امسحه بكاميرا الآيفون:
+          </p>
+          <button
+            onClick={onShowQr}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-3 text-sm font-bold text-white hover:bg-sky-400 transition"
+          >
+            <QrCode className="size-5" />
+            إنشاء QR Code للآيفون
+          </button>
+        </div>
+      )}
+
+      {connecting && (
+        <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.08] p-3">
+          <Loader2 className="size-4 animate-spin text-emerald-400 shrink-0" />
+          <span className="text-sm text-emerald-200">
+            جارٍ الاتصال بـ Expert Option…
+          </span>
+        </div>
+      )}
+
+      {connectionError && (
+        <div className="flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-200">
+          <ShieldAlert className="size-4 shrink-0 mt-0.5 text-red-400" />
+          <span className="font-mono">{connectionError}</span>
+        </div>
       )}
     </div>
   );
