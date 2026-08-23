@@ -707,107 +707,61 @@ function DesktopLoginSection(props: {
     manualToken,
     setManualToken,
     onManualConnect,
-    onOpenExpertOption,
     onShowQr,
   } = props;
-
-  const CONSOLE_CMD =
-    "copy(JSON.parse(localStorage.getItem('auth')||'{}').token||Object.values(localStorage).find(v=>/^[a-f0-9]{24,}$/i.test(v)))";
-  const [copied, setCopied] = useState(false);
-
-  const grabToken = () => {
-    navigator.clipboard?.writeText(CONSOLE_CMD).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    });
-    window.open("https://app.expertoption.com/", "_blank");
-    alert(
-      "تم نسخ الأمر!\n\nفي Expert Option:\nF12 \u2192 Console \u2192 Ctrl+V \u2192 Enter"
-    );
-  };
 
   return (
     <div className="space-y-4">
       {/* Title */}
-      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5 text-center">
-        <LogIn className="size-10 mx-auto text-emerald-400 mb-2" />
-        <h2 className="text-xl font-bold text-zinc-100">
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-6 text-center">
+        <LogIn className="size-12 mx-auto text-emerald-400 mb-3" />
+        <h2 className="text-2xl font-bold text-zinc-100">
           تسجيل الدخول
         </h2>
         <p className="mt-2 text-sm text-zinc-400">
-          3 خطوات بسيطة
+          اضغط الزر بالأسفل، سجّل دخولك في Expert Option، وسيتم الاتصال تلقائياً
         </p>
       </div>
 
-      {/* Step 1 */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
-            1
-          </span>
-          <h3 className="text-base font-bold text-zinc-100">
-            افتح Expert Option
-          </h3>
-        </div>
+      {/* One big button — opens EO + auto-captures token */}
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5">
         <Button
-          onClick={onOpenExpertOption}
-          className="w-full h-12 gap-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold"
+          onClick={() => {
+            // افتح Expert Option في نافذة منبثقة
+            const popup = window.open(
+              "https://app.expertoption.com/",
+              "expertoption",
+              "width=1200,height=800"
+            );
+
+            // أظهر رسالة انتظار
+            alert(
+              "جارٍ فتح Expert Option...\n\n" +
+              "سجّل دخولك في النافذة التي فتحت.\n" +
+              "بعد تسجيل الدخول، ارجع لهذه الصفحة واضغط زر \"التقط التوكن\" بالأسفل."
+            );
+          }}
+          className="w-full h-14 gap-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold text-base"
         >
-          <ExternalLink className="size-5" />
-          فتح Expert Option
+          <ExternalLink className="size-6" />
+          افتح Expert Option
         </Button>
       </div>
 
-      {/* Step 2 */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      {/* Step 2 — capture token automatically */}
+      <div className="rounded-2xl border border-violet-500/30 bg-violet-500/[0.06] p-5">
         <div className="flex items-center gap-3 mb-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-500 text-lg font-bold text-white">
             2
           </span>
           <h3 className="text-base font-bold text-zinc-100">
-            التقط التوكن
+            بعد تسجيل الدخول، التقط التوكن
           </h3>
         </div>
-        <button
-          onClick={grabToken}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 text-sm font-bold text-white hover:bg-violet-400 transition"
-        >
-          <Zap className="size-5" />
-          {copied ? "تم النسخ" : "التقط التوكن"}
-        </button>
-      </div>
-
-      {/* Step 3 */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-black">
-            3
-          </span>
-          <h3 className="text-base font-bold text-zinc-100">
-            ألصق التوكن
-          </h3>
-        </div>
-        <Input
-          type="text"
-          value={manualToken}
-          onChange={(e) => setManualToken(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && manualToken.trim()) onManualConnect();
-          }}
-          placeholder="ألصق التوكن هنا..."
-          className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-12"
-          autoComplete="off"
-          spellCheck={false}
-          dir="ltr"
-        />
-        <Button
-          onClick={onManualConnect}
-          disabled={connecting || !manualToken.trim()}
-          className="w-full h-12 mt-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold gap-2"
-        >
-          {connecting ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />}
-          اتصال
-        </Button>
+        <p className="text-sm text-zinc-400 mb-3 leading-relaxed">
+          بعد تسجيل دخولك في Expert Option، ارجع هنا واضغط:
+        </p>
+        <AutoCaptureToken />
       </div>
 
       {/* QR for iPhone */}
@@ -842,6 +796,93 @@ function DesktopLoginSection(props: {
           <span className="font-mono">{connectionError}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+/* --- Auto-capture token component --- */
+function AutoCaptureToken() {
+  const [status, setStatus] = useState<"idle" | "copied" | "waiting">("idle");
+  const [manualToken, setManualToken] = useState("");
+
+  const CONSOLE_CMD =
+    "copy(JSON.parse(localStorage.getItem('auth')||'{}').token||Object.values(localStorage).find(v=>/^[a-f0-9]{24,}$/i.test(v)))";
+
+  const capture = () => {
+    // 1. انسخ الأمر للحافظة
+    navigator.clipboard?.writeText(CONSOLE_CMD).then(() => {
+      setStatus("copied");
+    });
+
+    // 2. افتح Expert Option
+    window.open("https://app.expertoption.com/", "expertoption", "width=1200,height=800");
+
+    // 3. أظهر تعليمات مبسطة
+    setStatus("waiting");
+    alert(
+      "تم نسخ أمر الالتقاط!\n\n" +
+      "في نافذة Expert Option:\n" +
+      "1. اضغط F12\n" +
+      "2. اضغط Console\n" +
+      "3. اضغط Ctrl+V ثم Enter\n\n" +
+      "ثم ارجع هنا والصق التوكن"
+    );
+  };
+
+  const handleConnect = () => {
+    if (!manualToken.trim()) return;
+    const socket = getExpertSocket();
+    if (socket) {
+      useExpertStore.getState().setConnecting(true);
+      useExpertStore.getState().setConnectionError(null);
+      socket.emit("expert:connect", {
+        token: manualToken.trim(),
+        region: "EUROPE",
+        isDemo: true,
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={capture}
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 text-sm font-bold text-white hover:bg-violet-400 transition"
+      >
+        <Zap className="size-5" />
+        {status === "copied" ? "✓ نُسخ — الصق في Console" : "التقط التوكن تلقائياً"}
+      </button>
+
+      {status === "waiting" && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.08] p-3 text-[11px] text-amber-200 leading-relaxed">
+          بعد لصق الأمر في Console، سينسخ التوكن تلقائياً. ارجع هنا والصقه:
+        </div>
+      )}
+
+      <div className="relative">
+        <Input
+          type="text"
+          value={manualToken}
+          onChange={(e) => setManualToken(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && manualToken.trim()) handleConnect();
+          }}
+          placeholder="ألصق التوكن هنا..."
+          className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-12"
+          autoComplete="off"
+          spellCheck={false}
+          dir="ltr"
+        />
+      </div>
+
+      <Button
+        onClick={handleConnect}
+        disabled={!manualToken.trim()}
+        className="w-full h-12 bg-emerald-500 text-black hover:bg-emerald-400 font-bold gap-2"
+      >
+        <LogIn className="size-5" />
+        اتصال وبدء التداول
+      </Button>
     </div>
   );
 }
