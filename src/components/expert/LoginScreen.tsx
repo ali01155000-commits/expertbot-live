@@ -286,7 +286,7 @@ export default function LoginScreen() {
               <img
                 src="/bot-hero.png"
                 alt="ExpertBot AI"
-                className="h-40 w-auto rounded-2xl object-cover ring-2 ring-emerald-500/30 shadow-[0_0_60px_-10px_rgba(16,185,129,0.5)]"
+                className="h-64 w-auto rounded-2xl object-cover ring-2 ring-emerald-500/40 shadow-[0_0_80px_-10px_rgba(16,185,129,0.6)]"
               />
             </div>
             <div>
