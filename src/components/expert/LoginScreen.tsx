@@ -719,26 +719,29 @@ function DesktopLoginSection(props: {
           تسجيل الدخول
         </h2>
         <p className="mt-2 text-sm text-zinc-400">
-          اضغط الزر بالأسفل، سجّل دخولك في Expert Option، وسيتم الاتصال تلقائياً
+          اضغط الزر، سجّل دخولك في Expert Option، ثم ارجع والصق التوكن
         </p>
       </div>
 
-      {/* One big button — opens EO + auto-captures token */}
+      {/* One button — opens EO + copies capture command */}
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5">
         <Button
           onClick={() => {
-            // افتح Expert Option في نافذة منبثقة
-            const popup = window.open(
-              "https://app.expertoption.com/",
-              "expertoption",
-              "width=1200,height=800"
+            // 1. انسخ أمر بسيط
+            navigator.clipboard?.writeText(
+              "copy(JSON.stringify(localStorage))"
             );
-
-            // أظهر رسالة انتظار
+            // 2. افتح Expert Option
+            window.open("https://app.expertoption.com/", "_blank");
+            // 3. أظهر تعليمات
             alert(
-              "جارٍ فتح Expert Option...\n\n" +
-              "سجّل دخولك في النافذة التي فتحت.\n" +
-              "بعد تسجيل الدخول، ارجع لهذه الصفحة واضغط زر \"التقط التوكن\" بالأسفل."
+              "تم نسخ الأمر وفتح Expert Option!\n\n" +
+              "في Expert Option:\n" +
+              "1. سجّل دخولك\n" +
+              "2. اضغط F12\n" +
+              "3. اضغط Console\n" +
+              "4. اضغط Ctrl+V ثم Enter\n\n" +
+              "ارجع هنا والصق النتيجة"
             );
           }}
           className="w-full h-14 gap-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold text-base"
@@ -748,20 +751,32 @@ function DesktopLoginSection(props: {
         </Button>
       </div>
 
-      {/* Step 2 — capture token automatically */}
-      <div className="rounded-2xl border border-violet-500/30 bg-violet-500/[0.06] p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-500 text-lg font-bold text-white">
-            2
-          </span>
-          <h3 className="text-base font-bold text-zinc-100">
-            بعد تسجيل الدخول، التقط التوكن
-          </h3>
-        </div>
-        <p className="text-sm text-zinc-400 mb-3 leading-relaxed">
-          بعد تسجيل دخولك في Expert Option، ارجع هنا واضغط:
-        </p>
-        <AutoCaptureToken />
+      {/* Paste field */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <label className="text-sm font-bold text-zinc-200 mb-2 block">
+          ألصق التوكن هنا
+        </label>
+        <Input
+          type="text"
+          value={manualToken}
+          onChange={(e) => setManualToken(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && manualToken.trim()) onManualConnect();
+          }}
+          placeholder="ألصق هنا..."
+          className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-12"
+          autoComplete="off"
+          spellCheck={false}
+          dir="ltr"
+        />
+        <Button
+          onClick={onManualConnect}
+          disabled={connecting || !manualToken.trim()}
+          className="w-full h-12 mt-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold gap-2"
+        >
+          {connecting ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />}
+          اتصال
+        </Button>
       </div>
 
       {/* QR for iPhone */}
@@ -770,7 +785,7 @@ function DesktopLoginSection(props: {
           <div className="flex items-center gap-3 mb-3">
             <QrCode className="size-6 text-sky-400" />
             <h3 className="text-base font-bold text-sky-200">
-              لديك آيفون؟ انقل الجلسة
+              انقل للآيفون
             </h3>
           </div>
           <button
@@ -799,132 +814,6 @@ function DesktopLoginSection(props: {
     </div>
   );
 }
-
-/* --- Auto-capture token component --- */
-function AutoCaptureToken() {
-  const [status, setStatus] = useState<"idle" | "copied" | "waiting">("idle");
-  const [manualToken, setManualToken] = useState("");
-
-  const CONSOLE_CMD = `(function(){
-    var t=null;
-    // 1. ابحث في localStorage بمفاتيح متعددة
-    try{t=JSON.parse(localStorage.getItem('auth')||'{}').token}catch(e){}
-    if(!t)try{t=localStorage.getItem('token')}catch(e){}
-    if(!t)try{t=localStorage.getItem('auth_token')}catch(e){}
-    if(!t)try{t=localStorage.getItem('session')}catch(e){}
-    if(!t){
-      try{
-        for(var i=0;i<localStorage.length;i++){
-          var k=localStorage.key(i),v=localStorage.getItem(k);
-          if(v&&v.length>=20&&v.length<=80&&/^[a-f0-9]+$/i.test(v)){t=v;break}
-        }
-      }catch(e){}
-    }
-    // 2. ابحث في cookies
-    if(!t){
-      try{
-        var m=document.cookie.match(/(?:^|;\\s*)([a-f0-9]{24,})/i);
-        if(m)t=m[1];
-      }catch(e){}
-    }
-    // 3. ابحث في WebSocket messages
-    if(!t&&!window.__eoHook){
-      window.__eoHook=1;
-      var orig=WebSocket.prototype.send;
-      WebSocket.prototype.send=function(d){
-        try{
-          var s=typeof d==='string'?d:new TextDecoder().decode(d);
-          var m=s.match(/"token"\\s*:\\s*"([a-f0-9]{20,})"/);
-          if(m&&m[1]){copy(m[1]);alert('تم التقاط التوكن! ارجع للتطبيق والصقه.')}
-        }catch(e){}
-        return orig.apply(this,arguments);
-      };
-      alert('لم يتم العثور على التوكن بعد. تفاعل مع Expert Option (اضغط أي زر أو افتح صفقة) وسيتم التقاطه تلقائياً.');
-      return;
-    }
-    if(t){copy(t);alert('تم التقاط التوكن! ارجع للتطبيق والصقه.')}
-    else{alert('لم يتم العثور على التوكن. تأكد أنك سجلت دخولك في Expert Option.')}
-  })()`;
-
-  const capture = () => {
-    // انسخ أمر بسيط جداً — يطبع كل localStorage
-    navigator.clipboard?.writeText("copy(JSON.stringify(localStorage))").then(() => {
-      setStatus("copied");
-    });
-
-    // افتح Expert Option
-    window.open("https://app.expertoption.com/", "expertoption", "width=1200,height=800");
-
-    // أظهر تعليمات بسيطة جداً
-    setStatus("waiting");
-    alert(
-      "تم نسخ أمر بسيط!\n\n" +
-      "في نافذة Expert Option:\n" +
-      "1. اضغط F12\n" +
-      "2. اضغط Console\n" +
-      "3. اضغط Ctrl+V ثم Enter\n\n" +
-      "سيتم نسخ كل البيانات. ارجع هنا والصقها."
-    );
-  };
-
-  const handleConnect = () => {
-    if (!manualToken.trim()) return;
-    const socket = getExpertSocket();
-    if (socket) {
-      useExpertStore.getState().setConnecting(true);
-      useExpertStore.getState().setConnectionError(null);
-      socket.emit("expert:connect", {
-        token: manualToken.trim(),
-        region: "EUROPE",
-        isDemo: true,
-      });
-    }
-  };
-
-  return (
-    <div className="space-y-3">
-      <button
-        onClick={capture}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 text-sm font-bold text-white hover:bg-violet-400 transition"
-      >
-        <Zap className="size-5" />
-        {status === "copied" ? "✓ نُسخ — الصق في Console" : "التقط التوكن تلقائياً"}
-      </button>
-
-      {status === "waiting" && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.08] p-3 text-[11px] text-amber-200 leading-relaxed">
-          بعد لصق الأمر في Console، سينسخ التوكن تلقائياً. ارجع هنا والصقه:
-        </div>
-      )}
-
-      <div className="relative">
-        <Input
-          type="text"
-          value={manualToken}
-          onChange={(e) => setManualToken(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && manualToken.trim()) handleConnect();
-          }}
-          placeholder="ألصق التوكن هنا..."
-          className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-12"
-          autoComplete="off"
-          spellCheck={false}
-          dir="ltr"
-        />
-      </div>
-
-      <Button
-        onClick={handleConnect}
-        disabled={!manualToken.trim()}
-        className="w-full h-12 bg-emerald-500 text-black hover:bg-emerald-400 font-bold gap-2"
-      >
-        <LogIn className="size-5" />
-        اتصال وبدء التداول
-      </Button>
-    </div>
-  );
-}
-
 
 /* ================================================================== */
 /* QR Modal — detailed step-by-step instructions                      */
