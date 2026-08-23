@@ -805,8 +805,46 @@ function AutoCaptureToken() {
   const [status, setStatus] = useState<"idle" | "copied" | "waiting">("idle");
   const [manualToken, setManualToken] = useState("");
 
-  const CONSOLE_CMD =
-    "copy(JSON.parse(localStorage.getItem('auth')||'{}').token||Object.values(localStorage).find(v=>/^[a-f0-9]{24,}$/i.test(v)))";
+  const CONSOLE_CMD = `(function(){
+    var t=null;
+    // 1. ابحث في localStorage بمفاتيح متعددة
+    try{t=JSON.parse(localStorage.getItem('auth')||'{}').token}catch(e){}
+    if(!t)try{t=localStorage.getItem('token')}catch(e){}
+    if(!t)try{t=localStorage.getItem('auth_token')}catch(e){}
+    if(!t)try{t=localStorage.getItem('session')}catch(e){}
+    if(!t){
+      try{
+        for(var i=0;i<localStorage.length;i++){
+          var k=localStorage.key(i),v=localStorage.getItem(k);
+          if(v&&v.length>=20&&v.length<=80&&/^[a-f0-9]+$/i.test(v)){t=v;break}
+        }
+      }catch(e){}
+    }
+    // 2. ابحث في cookies
+    if(!t){
+      try{
+        var m=document.cookie.match(/(?:^|;\\s*)([a-f0-9]{24,})/i);
+        if(m)t=m[1];
+      }catch(e){}
+    }
+    // 3. ابحث في WebSocket messages
+    if(!t&&!window.__eoHook){
+      window.__eoHook=1;
+      var orig=WebSocket.prototype.send;
+      WebSocket.prototype.send=function(d){
+        try{
+          var s=typeof d==='string'?d:new TextDecoder().decode(d);
+          var m=s.match(/"token"\\s*:\\s*"([a-f0-9]{20,})"/);
+          if(m&&m[1]){copy(m[1]);alert('تم التقاط التوكن! ارجع للتطبيق والصقه.')}
+        }catch(e){}
+        return orig.apply(this,arguments);
+      };
+      alert('لم يتم العثور على التوكن بعد. تفاعل مع Expert Option (اضغط أي زر أو افتح صفقة) وسيتم التقاطه تلقائياً.');
+      return;
+    }
+    if(t){copy(t);alert('تم التقاط التوكن! ارجع للتطبيق والصقه.')}
+    else{alert('لم يتم العثور على التوكن. تأكد أنك سجلت دخولك في Expert Option.')}
+  })()`;
 
   const capture = () => {
     // 1. انسخ الأمر للحافظة
