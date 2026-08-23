@@ -219,6 +219,7 @@ interface ExpertState {
   activated: boolean;
   activationCode: string | null;
   paid: boolean;
+  guideSeen: boolean;
 
   // socket.io client (kept here for API completeness; do not subscribe to it
   // in components — use useExpertSocket()/getExpertSocket() instead).
@@ -252,6 +253,7 @@ interface ExpertActions {
   setActivated: (v: boolean) => void;
   setActivationCode: (c: string | null) => void;
   setPaid: (v: boolean) => void;
+  setGuideSeen: (v: boolean) => void;
   setSocket: (s: ExpertSocketType | null) => void;
   setConnected: (v: boolean) => void;
   setConnecting: (v: boolean) => void;
@@ -280,6 +282,8 @@ const initialState: ExpertState = {
   activated: false,
   activationCode: null,
   paid: typeof window !== "undefined" && localStorage.getItem("expertbot.paid") === "1",
+  guideSeen:
+    typeof window !== "undefined" && localStorage.getItem("expertbot.guideSeen") === "1",
   socket: null,
   connected: false,
   connecting: false,
@@ -328,6 +332,12 @@ export const useExpertStore = create<ExpertStore>((set) => ({
     set({ paid: v });
     try {
       localStorage.setItem("expertbot.paid", v ? "1" : "0");
+    } catch {}
+  },
+  setGuideSeen: (v) => {
+    set({ guideSeen: v });
+    try {
+      localStorage.setItem("expertbot.guideSeen", v ? "1" : "0");
     } catch {}
   },
   setSocket: (s) => set({ socket: s }),

@@ -15,6 +15,7 @@ import {
 import ActivityLog from "@/components/expert/ActivityLog";
 import ActivationScreen from "@/components/expert/ActivationScreen";
 import BinancePaymentScreen from "@/components/expert/BinancePaymentScreen";
+import BotUsageGuide from "@/components/expert/BotUsageGuide";
 import AssetSelector from "@/components/expert/AssetSelector";
 import BotControlPanel from "@/components/expert/BotControlPanel";
 import CandlestickChart from "@/components/expert/CandlestickChart";
@@ -41,6 +42,7 @@ export default function Home() {
   const connected = useExpertStore((s) => s.connected);
   const activated = useExpertStore((s) => s.activated);
   const paid = useExpertStore((s) => s.paid);
+  const guideSeen = useExpertStore((s) => s.guideSeen);
   const [tab, setTab] = useState<Tab>("trade");
 
   // بوابة الدفع: يجب دفع اشتراك 150$ أولاً (قبل الحصول على الكود)
@@ -55,6 +57,11 @@ export default function Home() {
 
   if (!connected) {
     return <LoginScreen />;
+  }
+
+  // دليل تشغيل البوت (يظهر مرة واحدة بعد أول دخول)
+  if (!guideSeen) {
+    return <BotUsageGuide />;
   }
 
   return (
