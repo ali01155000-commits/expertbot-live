@@ -4,6 +4,7 @@ import {
   Bot,
   ChevronDown,
   CircleDollarSign,
+  Link2,
   LogOut,
   Radio,
   Wallet,
@@ -173,6 +174,21 @@ export default function DashboardHeader() {
               )}
             </div>
             <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem
+              onClick={() => {
+                const token = localStorage.getItem("expertbot.token");
+                if (token) {
+                  const url = window.location.origin + "/?token=" + token;
+                  navigator.clipboard?.writeText(url).then(() => {
+                    alert("تم نسخ رابط الدعوة!\n\nأرسله للعميل عبر واتساب أو تيليجرام.\nالعميل يفتحه على آيفونه ويعمل البوت فوراً.");
+                  });
+                }
+              }}
+              className="cursor-pointer text-emerald-300 hover:text-emerald-200 focus:bg-emerald-500/10 focus:text-emerald-200"
+            >
+              <Link2 className="size-4" />
+              إنشاء رابط دعوة (للعميل)
+            </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
               onClick={handleDisconnect}
