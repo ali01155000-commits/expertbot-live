@@ -177,12 +177,16 @@ export default function LoginScreen() {
     return () => window.removeEventListener("message", onMessage);
   }, [connectWithToken]);
 
-  // Auto-connect if a saved token exists.
+  // Auto-connect: if a token exists (from URL invite or saved), connect immediately
   const didAutoConnect = useRef(false);
   useEffect(() => {
     if (didAutoConnect.current) return;
     didAutoConnect.current = true;
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("expertbot.skipAuto")) {
+    // رابط الدعوة: تجاوز skipAuto (العميل يجب أن يتصل فوراً)
+    const fromInvite =
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("token");
+    if (!fromInvite && typeof sessionStorage !== "undefined" && sessionStorage.getItem("expertbot.skipAuto")) {
       sessionStorage.removeItem("expertbot.skipAuto");
       return;
     }
@@ -190,6 +194,11 @@ export default function LoginScreen() {
       connectWithToken(token);
     }
   }, [token, connecting, connectWithToken]);
+
+  // If token came from URL (invite link), show a connecting screen
+  const fromInvite =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("token");
 
   // Persist region/isDemo.
   useEffect(() => {
@@ -249,6 +258,17 @@ export default function LoginScreen() {
   const maskedToken = token
     ? token.slice(0, 6) + "••••••••" + token.slice(-4)
     : "";
+
+  // If token came from URL (invite link), show a connecting screen
+  if (fromInvite && token && connecting) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0a0e14] gap-4">
+        <Loader2 className="size-12 animate-spin text-emerald-400" />
+        <p className="text-lg font-bold text-zinc-100">جارٍ الاتصال بـ Expert Option...</p>
+        <p className="text-sm text-zinc-400">سيفتح البوت خلال ثوانٍ</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0a0e14] text-zinc-100">

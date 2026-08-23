@@ -175,19 +175,44 @@ export default function DashboardHeader() {
             </div>
             <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuItem
-              onClick={() => {
+              onClick={async () => {
                 const token = localStorage.getItem("expertbot.token");
-                if (token) {
-                  const url = window.location.origin + "/?token=" + token;
-                  navigator.clipboard?.writeText(url).then(() => {
-                    alert("تم نسخ رابط الدعوة!\n\nأرسله للعميل عبر واتساب أو تيليجرام.\nالعميل يفتحه على آيفونه ويعمل البوت فوراً.");
-                  });
+                if (!token) return;
+                const url = window.location.origin + "/?token=" + token;
+                // Copy URL
+                navigator.clipboard?.writeText(url);
+                // Also generate QR code and show in a new window
+                const qr = await import("qrcode").then((m) => m.default);
+                const qrUrl = await qr.toDataURL(url, {
+                  width: 300,
+                  margin: 2,
+                  color: { dark: "#0a0e14", light: "#10b981" },
+                });
+                const w = window.open("", "_blank", "width=400,height=520");
+                if (w) {
+                  w.document.write(`
+                    <html dir="rtl"><head><title>رابط الدعوة</title>
+                    <style>body{font-family:system-ui;background:#0a0e14;color:#fff;text-align:center;padding:20px}
+                    h2{color:#10b981}img{border:4px solid #10b981;border-radius:12px}
+                    p{color:#999;font-size:14px;margin-top:10px}
+                    code{background:#222;padding:8px 12px;border-radius:6px;color:#10b981;display:block;margin:10px;word-break:break-all;font-size:11px}
+                    </style></head><body>
+                    <h2>رابط دعوة ExpertBot</h2>
+                    <img src="${qrUrl}" width="250" height="250" />
+                    <p>امسح الـ QR بآيفون أو أرسل الرابط:</p>
+                    <code>${url}</code>
+                    <p style="color:#10b981">تم نسخ الرابط ✅</p>
+                    </body></html>
+                  `);
+                  w.document.close();
+                } else {
+                  alert("تم نسخ رابط الدعوة!\n\n" + url);
                 }
               }}
               className="cursor-pointer text-emerald-300 hover:text-emerald-200 focus:bg-emerald-500/10 focus:text-emerald-200"
             >
               <Link2 className="size-4" />
-              إنشاء رابط دعوة (للعميل)
+              إنشاء رابط دعوة + QR Code
             </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"

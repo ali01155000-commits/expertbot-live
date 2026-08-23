@@ -45,13 +45,27 @@ export default function Home() {
   const guideSeen = useExpertStore((s) => s.guideSeen);
   const [tab, setTab] = useState<Tab>("trade");
 
-  // بوابة الدفع: يجب دفع اشتراك 150$ أولاً (قبل الحصول على الكود)
-  if (!paid) {
+  // رابط الدعوة: إذا كان ?token= موجود في URL، تجاوز الدفع والتفعيل
+  // نفحصه أولاً قبل أي شيء، ونحفظه في state حتى لا يضيع
+  const [hasInviteToken] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const has = new URLSearchParams(window.location.search).has("token");
+    if (has) {
+      // عيّن paid و activated ليتجاوز البوابات
+      try {
+        localStorage.setItem("expertbot.paid", "1");
+      } catch {}
+    }
+    return has;
+  });
+
+  // بوابة الدفع: يجب دفع اشتراك 150$ أولاً (إلا إذا جاء عبر رابط دعوة)
+  if (!paid && !hasInviteToken) {
     return <BinancePaymentScreen />;
   }
 
-  // بوابة التفعيل: بعد الدفع، أدخل كود التفعيل
-  if (!activated) {
+  // بوابة التفعيل: بعد الدفع، أدخل كود التفعيل (إلا إذا جاء عبر رابط دعوة)
+  if (!activated && !hasInviteToken) {
     return <ActivationScreen />;
   }
 
