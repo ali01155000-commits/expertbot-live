@@ -6,6 +6,7 @@ import {
   CircleDollarSign,
   Link2,
   LogOut,
+  QrCode,
   Radio,
   Wallet,
 } from "lucide-react";
@@ -118,6 +119,50 @@ export default function DashboardHeader() {
             {formatPrice(balance, 0)}
           </span>
         </div>
+
+        {/* === Invite link button (visible in topbar) === */}
+        <button
+          onClick={async () => {
+            const token = localStorage.getItem("expertbot.token");
+            if (!token) return;
+            const url = window.location.origin + "/?token=" + token;
+            navigator.clipboard?.writeText(url);
+            const qr = await import("qrcode").then((m) => m.default);
+            const qrUrl = await qr.toDataURL(url, {
+              width: 300,
+              margin: 2,
+              color: { dark: "#0a0e14", light: "#10b981" },
+            });
+            const w = window.open("", "_blank", "width=420,height=560");
+            if (w) {
+              w.document.write(`
+                <html dir="rtl"><head><title>رابط المشاركة</title>
+                <style>
+                  body{font-family:system-ui;background:#0a0e14;color:#fff;text-align:center;padding:24px;margin:0}
+                  h2{color:#10b981;margin:0 0 16px}
+                  img{border:4px solid #10b981;border-radius:12px;margin:8px 0}
+                  p{color:#999;font-size:13px;margin:8px 0}
+                  code{background:#1a1a2e;padding:10px 14px;border-radius:8px;color:#10b981;display:block;margin:12px;word-break:break-all;font-size:11px;direction:ltr}
+                  .ok{color:#10b981;font-weight:bold;margin-top:8px}
+                </style></head><body>
+                  <h2>رابط مشاركة ExpertBot</h2>
+                  <img src="${qrUrl}" width="260" height="260" />
+                  <p>امسح الـ QR بكاميرا الآيفون أو أرسل الرابط:</p>
+                  <code>${url}</code>
+                  <p class="ok">تم نسخ الرابط ✅</p>
+                  <p style="font-size:11px;color:#555">العميل يفتح الرابط → البوت يعمل فوراً</p>
+                </body></html>
+              `);
+              w.document.close();
+            }
+          }}
+          className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20 transition"
+          title="إنشاء رابط مشاركة + QR Code"
+        >
+          <Link2 className="size-3.5" />
+          <span className="hidden sm:inline">رابط مشاركة</span>
+          <QrCode className="size-3.5 sm:hidden" />
+        </button>
 
         {/* Account dropdown */}
         <DropdownMenu>
