@@ -182,7 +182,7 @@ export function ensureExpertSocket(): Socket {
     const isProduction = typeof window !== "undefined" && window.location.protocol === "https:";
     if (isProduction) {
       socketInstance = io({
-        path: "/socket.io",
+        path: "/",
         transports: ["websocket", "polling"],
         reconnection: true,
         reconnectionAttempts: 10,
