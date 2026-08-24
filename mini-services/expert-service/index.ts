@@ -7,6 +7,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { ExpertClient, REGIONS } from "./expert-client";
 import { BotEngine } from "./bot-engine";
+import WebSocket from "ws";
 
 const httpServer = createServer();
 // In production, set SOCKET_PATH="/socket.io" (standard, Nginx-proxied).
@@ -281,7 +282,10 @@ async function tryExpertLogin(email: string, password: string): Promise<{ token:
     // Expert Option يستخدم WebSocket للتحقق من الهوية
     // نحاول محاكاة عملية تسجيل الدخول عبر WebSocket
 
-    const ws = new WebSocket("wss://fr24g1eu.expertoption.com/");
+    const ws = new (WebSocket as any)("wss://fr24g1eu.expertoption.com/", {
+      origin: "https://app.expertoption.com",
+      rejectUnauthorized: false,
+    });
 
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
