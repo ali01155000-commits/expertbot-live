@@ -276,86 +276,154 @@ process.on("SIGINT", () => {
 });
 
 // === دالة تسجيل الدخول بالبريد وكلمة المرور ===
-// تحاول تسجيل الدخول لـ Expert Option والحصول على التوكن
+// تحاول تسجيل الدخول لـ Expert Option عبر HTTP API والحصول على التوكن
 async function tryExpertLogin(email: string, password: string): Promise<{ token: string | null; error?: string }> {
   try {
-    // Expert Option يستخدم WebSocket للتحقق من الهوية
-    // نحاول محاكاة عملية تسجيل الدخول عبر WebSocket
+    // Expert Option يستخدم HTTP API لتسجيل الدخول
+    // نجرب عدة endpoints محتملة
 
+    const endpoints = [
+      "https://app.expertoption.com/api/login",
+      "https://fr24g1eu.expertoption.com/api/login",
+      "https://expertoption.com/api/login",
+    ];
+
+    for (const url of endpoints) {
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Origin": "https://app.expertoption.com",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // ابحث عن التوكن في الرد
+          const findToken = (obj: any): string | null => {
+            if (!obj || typeof obj !== "object") return null;
+            if (obj.token && typeof obj.token === "string" && /^[a-f0-9]{20,}$/i.test(obj.token)) {
+              return obj.token;
+            }
+            for (const key of Object.keys(obj)) {
+              const found = findToken(obj[key]);
+              if (found) return found;
+            }
+            return null;
+          };
+
+          const token = findToken(data);
+          if (token) return { token };
+        }
+      } catch {}
+    }
+
+    // إذا فشل HTTP، جرّب WebSocket مع الإجراء الصحيح
+    // Expert Option يستخدم "authorize" أو "signIn" وليس "login"
+    return await tryWSLogin(email, password);
+  } catch (e: any) {
+    return { token: null, error: e?.message || "خطأ غير معروف" };
+  }
+}
+
+// محاولة تسجيل الدخول عبر WebSocket
+async function tryWSLogin(email: string, password: string): Promise<{ token: string | null; error?: string }> {
+  return new Promise((resolve) => {
     const ws = new (WebSocket as any)("wss://fr24g1eu.expertoption.com/", {
       origin: "https://app.expertoption.com",
       rejectUnauthorized: false,
     });
 
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        ws.close();
-        resolve({ token: null, error: "انتهت مهلة تسجيل الدخول" });
-      }, 15000);
+    const timeout = setTimeout(() => {
+      try { ws.close(); } catch {}
+      resolve({ token: null, error: "انتهت مهلة تسجيل الدخول (15 ثانية)" });
+    }, 15000);
 
-      ws.on("open", () => {
-        // أرسل طلب تسجيل الدخول
-        const loginMsg = {
-          action: "login",
-          message: {
-            email: email,
-            password: password,
-          },
-          v: 18,
-          ns: 1,
-        };
-        ws.send(Buffer.from(encodeURIComponent(JSON.stringify(loginMsg)), "utf-8"), { binary: true });
-      });
+    let messageCount = 0;
 
-      ws.on("message", (data: Buffer) => {
-        try {
-          const msg = JSON.parse(data.toString("utf-8"));
-          const action = msg?.action;
+    ws.on("open", () => {
+      // Expert Option يستخدم setContext + profile للحصول على الجلسة
+      // جرّب عدة صيغ
+      const attempts = [
+        { action: "signIn", message: { email, password }, v: 18, ns: 1 },
+        { action: "authorize", message: { email, password }, v: 18, ns: 1 },
+        { action: "login", message: { email, password, type: "email" }, v: 18, ns: 1 },
+        { action: "multipleAction", message: { actions: [
+          { action: "signIn", message: { email, password }, ns: 1, v: 18 },
+        ]}, v: 18, ns: 1 },
+      ];
 
-          // ابحث عن التوكن في رسالة الرد
-          if (action === "profile" || action === "login" || action === "multipleAction") {
-            // ابحث في كل مكان عن التوكن
-            const findToken = (obj: any): string | null => {
-              if (!obj || typeof obj !== "object") return null;
-              if (obj.token && typeof obj.token === "string" && /^[a-f0-9]{20,}$/i.test(obj.token)) {
-                return obj.token;
-              }
-              for (const key of Object.keys(obj)) {
-                const found = findToken(obj[key]);
-                if (found) return found;
-              }
-              return null;
-            };
-
-            const token = findToken(msg);
-            if (token) {
-              clearTimeout(timeout);
-              ws.close();
-              resolve({ token });
-              return;
-            }
+      // أرسل كل المحاولات بفاصل زمني
+      attempts.forEach((msg, i) => {
+        setTimeout(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(Buffer.from(encodeURIComponent(JSON.stringify(msg)), "utf-8"), { binary: true });
           }
-
-          if (action === "error") {
-            clearTimeout(timeout);
-            ws.close();
-            resolve({ token: null, error: msg?.message?.message || "فشل تسجيل الدخول" });
-            return;
-          }
-        } catch {}
-      });
-
-      ws.on("error", (err) => {
-        clearTimeout(timeout);
-        resolve({ token: null, error: err.message });
-      });
-
-      ws.on("close", () => {
-        clearTimeout(timeout);
-        resolve({ token: null, error: "تم إغلاق الاتصال قبل الحصول على التوكن" });
+        }, i * 2000);
       });
     });
-  } catch (e: any) {
-    return { token: null, error: e?.message || "خطأ غير معروف" };
-  }
+
+    ws.on("message", (data: Buffer) => {
+      messageCount++;
+      try {
+        const msg = JSON.parse(data.toString("utf-8"));
+        const action = msg?.action;
+
+        // ابحث عن التوكن في أي رسالة
+        const findToken = (obj: any): string | null => {
+          if (!obj || typeof obj !== "object") return null;
+          if (obj.token && typeof obj.token === "string" && /^[a-f0-9]{20,}$/i.test(obj.token)) {
+            return obj.token;
+          }
+          for (const key of Object.keys(obj)) {
+            const found = findToken(obj[key]);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        const token = findToken(msg);
+        if (token) {
+          clearTimeout(timeout);
+          try { ws.close(); } catch {}
+          resolve({ token });
+          return;
+        }
+
+        // ابحث عن session ID أو auth token بأشكال أخرى
+        if (msg?.message?.sessionId && /^[a-f0-9]{20,}$/i.test(msg.message.sessionId)) {
+          clearTimeout(timeout);
+          try { ws.close(); } catch {}
+          resolve({ token: msg.message.sessionId });
+          return;
+        }
+
+        if (action === "error") {
+          // لا توقف عند أول خطأ — جرّب المحاولة التالية
+          if (messageCount >= 4) {
+            clearTimeout(timeout);
+            try { ws.close(); } catch {}
+            resolve({ token: null, error: msg?.message?.message || "فشل تسجيل الدخول — تحقق من البريد وكلمة المرور" });
+          }
+        }
+      } catch {}
+    });
+
+    ws.on("error", (err: any) => {
+      clearTimeout(timeout);
+      resolve({ token: null, error: err.message });
+    });
+
+    ws.on("close", () => {
+      clearTimeout(timeout);
+      if (messageCount === 0) {
+        resolve({ token: null, error: "خادم Expert Option رفض الاتصال. قد يكون محمياً." });
+      } else {
+        resolve({ token: null, error: "تعذّر الحصول على التوكن — Expert Option قد لا يدعم تسجيل الدخول المباشر" });
+      }
+    });
+  });
 }
