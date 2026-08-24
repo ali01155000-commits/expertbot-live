@@ -170,12 +170,11 @@ function attachExpertListeners(socket: Socket, store: ExpertStoreApi) {
  */
 export function ensureExpertSocket(): Socket {
   if (!socketInstance) {
-    // Production: NEXT_PUBLIC_EXPERT_SERVICE_URL set → connect to it with path /socket.io
-    // Sandbox/dev: not set → same-origin with the Caddy gateway hack ?XTransformPort=3003
-    const serviceUrl = process.env.NEXT_PUBLIC_EXPERT_SERVICE_URL || "";
-    if (serviceUrl) {
-      // Production: dedicated service URL, standard socket.io path
-      socketInstance = io(serviceUrl, {
+    // Production: connect via /socket.io/ (Nginx proxies to expert-service:3003)
+    // Sandbox: Caddy gateway uses ?XTransformPort=3003
+    const isProduction = typeof window !== "undefined" && window.location.protocol === "https:";
+    if (isProduction) {
+      socketInstance = io({
         path: "/socket.io",
         transports: ["websocket", "polling"],
         reconnection: true,
@@ -184,7 +183,6 @@ export function ensureExpertSocket(): Socket {
         timeout: 15000,
       });
     } else {
-      // Sandbox: Caddy gateway routes ?XTransformPort=3003 → expert-service
       socketInstance = io("/?XTransformPort=3003", {
         transports: ["websocket", "polling"],
         reconnection: true,
