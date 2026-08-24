@@ -246,8 +246,53 @@ export default function LoginScreen() {
   };
 
   const handleManualConnect = () => {
-    const t = manualToken.trim();
+    let t = manualToken.trim();
     if (!t) return;
+
+    // إذا كان النص JSON (من copy(JSON.stringify(localStorage)))
+    // استخرج التوكن منه تلقائياً
+    try {
+      const parsed = JSON.parse(t);
+      // ابحث عن التوكن في كل المفاتيح
+      let foundToken = null;
+      for (const key of Object.keys(parsed)) {
+        const val = parsed[key];
+        if (typeof val === "string") {
+          // ربما val نفسه JSON
+          try {
+            const inner = JSON.parse(val);
+            if (inner.token && /^[a-f0-9]{20,}$/i.test(inner.token)) {
+              foundToken = inner.token;
+              break;
+            }
+          } catch {}
+          // أو val هو التوكن مباشرة
+          if (/^[a-f0-9]{20,}$/i.test(val)) {
+            foundToken = val;
+            break;
+          }
+        }
+      }
+      if (foundToken) {
+        t = foundToken;
+      } else if (/^[a-f0-9]{20,}$/i.test(t)) {
+        // التوكن مباشرة
+      } else {
+        useExpertStore.getState().setConnectionError(
+          "تعذّر استخراج التوكن من النص. تأكد من نسخ ناتج الأمر من Console."
+        );
+        return;
+      }
+    } catch {
+      // ليس JSON — تحقق إذا كان توكن مباشر
+      if (!/^[a-f0-9]{20,}$/i.test(t)) {
+        useExpertStore.getState().setConnectionError(
+          "النص ليس توكن صالح. تأكد من نسخ الناتج من Console."
+        );
+        return;
+      }
+    }
+
     connectWithToken(t);
   };
 
