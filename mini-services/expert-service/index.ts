@@ -276,154 +276,80 @@ process.on("SIGINT", () => {
 });
 
 // === دالة تسجيل الدخول بالبريد وكلمة المرور ===
-// تحاول تسجيل الدخول لـ Expert Option عبر HTTP API والحصول على التوكن
+// تستخدم Puppeteer (متصفح مخفي) لفتح Expert Option وتسجيل الدخول واستخراج التوكن
 async function tryExpertLogin(email: string, password: string): Promise<{ token: string | null; error?: string }> {
   try {
-    // Expert Option يستخدم HTTP API لتسجيل الدخول
-    // نجرب عدة endpoints محتملة
+    const puppeteer = await import("puppeteer");
+    const browser = await puppeteer.default.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
+    });
 
-    const endpoints = [
-      "https://app.expertoption.com/api/login",
-      "https://fr24g1eu.expertoption.com/api/login",
-      "https://expertoption.com/api/login",
-    ];
+    const page = await browser.newPage();
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
-    for (const url of endpoints) {
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Origin": "https://app.expertoption.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          },
-          body: JSON.stringify({ email, password }),
-        });
+    // افتح Expert Option
+    await page.goto("https://app.expertoption.com/", { waitUntil: "networkidle2", timeout: 30000 });
 
-        if (response.ok) {
-          const data = await response.json();
-          // ابحث عن التوكن في الرد
-          const findToken = (obj: any): string | null => {
-            if (!obj || typeof obj !== "object") return null;
-            if (obj.token && typeof obj.token === "string" && /^[a-f0-9]{20,}$/i.test(obj.token)) {
-              return obj.token;
-            }
-            for (const key of Object.keys(obj)) {
-              const found = findToken(obj[key]);
-              if (found) return found;
-            }
-            return null;
-          };
+    // انتظر حتى تظهر حقول تسجيل الدخول
+    await page.waitForSelector('input[type="email"], input[name="email"], input[placeholder*="email" i]', { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('input[type="password"], input[name="password"], input[placeholder*="password" i]', { timeout: 10000 }).catch(() => {});
 
-          const token = findToken(data);
-          if (token) return { token };
-        }
-      } catch {}
+    // املأ البريد الإلكتروني
+    const emailInput = await page.$('input[type="email"], input[name="email"], input[placeholder*="email" i]');
+    if (emailInput) {
+      await emailInput.click({ clickCount: 3 });
+      await emailInput.type(email);
     }
 
-    // إذا فشل HTTP، جرّب WebSocket مع الإجراء الصحيح
-    // Expert Option يستخدم "authorize" أو "signIn" وليس "login"
-    return await tryWSLogin(email, password);
-  } catch (e: any) {
-    return { token: null, error: e?.message || "خطأ غير معروف" };
-  }
-}
+    // املأ كلمة المرور
+    const passwordInput = await page.$('input[type="password"], input[name="password"], input[placeholder*="password" i]');
+    if (passwordInput) {
+      await passwordInput.click({ clickCount: 3 });
+      await passwordInput.type(password);
+    }
 
-// محاولة تسجيل الدخول عبر WebSocket
-async function tryWSLogin(email: string, password: string): Promise<{ token: string | null; error?: string }> {
-  return new Promise((resolve) => {
-    const ws = new (WebSocket as any)("wss://fr24g1eu.expertoption.com/", {
-      origin: "https://app.expertoption.com",
-      rejectUnauthorized: false,
-    });
+    // اضغط زر تسجيل الدخول
+    const loginButton = await page.$('button[type="submit"], button[class*="login" i], button[class*="sign" i]');
+    if (loginButton) {
+      await loginButton.click();
+    } else {
+      // جرّب الضغط على Enter
+      await page.keyboard.press("Enter");
+    }
 
-    const timeout = setTimeout(() => {
-      try { ws.close(); } catch {}
-      resolve({ token: null, error: "انتهت مهلة تسجيل الدخول (15 ثانية)" });
-    }, 15000);
-
-    let messageCount = 0;
-
-    ws.on("open", () => {
-      // Expert Option يستخدم setContext + profile للحصول على الجلسة
-      // جرّب عدة صيغ
-      const attempts = [
-        { action: "signIn", message: { email, password }, v: 18, ns: 1 },
-        { action: "authorize", message: { email, password }, v: 18, ns: 1 },
-        { action: "login", message: { email, password, type: "email" }, v: 18, ns: 1 },
-        { action: "multipleAction", message: { actions: [
-          { action: "signIn", message: { email, password }, ns: 1, v: 18 },
-        ]}, v: 18, ns: 1 },
-      ];
-
-      // أرسل كل المحاولات بفاصل زمني
-      attempts.forEach((msg, i) => {
-        setTimeout(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(Buffer.from(encodeURIComponent(JSON.stringify(msg)), "utf-8"), { binary: true });
+    // انتظر حتى يتم تسجيل الدخول (حتى يظهر التوكن في localStorage)
+    let token: string | null = null;
+    for (let i = 0; i < 30; i++) {
+      await page.waitForTimeout(1000);
+      token = await page.evaluate(() => {
+        try {
+          const auth = localStorage.getItem("auth");
+          if (auth) {
+            const parsed = JSON.parse(auth);
+            if (parsed.token) return parsed.token;
           }
-        }, i * 2000);
+        } catch (e) {}
+        // ابحث في كل localStorage
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const v = localStorage.getItem(localStorage.key(i));
+            if (v && v.length >= 20 && v.length <= 80 && /^[a-f0-9]+$/i.test(v)) return v;
+          }
+        } catch (e) {}
+        return null;
       });
-    });
+      if (token) break;
+    }
 
-    ws.on("message", (data: Buffer) => {
-      messageCount++;
-      try {
-        const msg = JSON.parse(data.toString("utf-8"));
-        const action = msg?.action;
+    await browser.close();
 
-        // ابحث عن التوكن في أي رسالة
-        const findToken = (obj: any): string | null => {
-          if (!obj || typeof obj !== "object") return null;
-          if (obj.token && typeof obj.token === "string" && /^[a-f0-9]{20,}$/i.test(obj.token)) {
-            return obj.token;
-          }
-          for (const key of Object.keys(obj)) {
-            const found = findToken(obj[key]);
-            if (found) return found;
-          }
-          return null;
-        };
-
-        const token = findToken(msg);
-        if (token) {
-          clearTimeout(timeout);
-          try { ws.close(); } catch {}
-          resolve({ token });
-          return;
-        }
-
-        // ابحث عن session ID أو auth token بأشكال أخرى
-        if (msg?.message?.sessionId && /^[a-f0-9]{20,}$/i.test(msg.message.sessionId)) {
-          clearTimeout(timeout);
-          try { ws.close(); } catch {}
-          resolve({ token: msg.message.sessionId });
-          return;
-        }
-
-        if (action === "error") {
-          // لا توقف عند أول خطأ — جرّب المحاولة التالية
-          if (messageCount >= 4) {
-            clearTimeout(timeout);
-            try { ws.close(); } catch {}
-            resolve({ token: null, error: msg?.message?.message || "فشل تسجيل الدخول — تحقق من البريد وكلمة المرور" });
-          }
-        }
-      } catch {}
-    });
-
-    ws.on("error", (err: any) => {
-      clearTimeout(timeout);
-      resolve({ token: null, error: err.message });
-    });
-
-    ws.on("close", () => {
-      clearTimeout(timeout);
-      if (messageCount === 0) {
-        resolve({ token: null, error: "خادم Expert Option رفض الاتصال. قد يكون محمياً." });
-      } else {
-        resolve({ token: null, error: "تعذّر الحصول على التوكن — Expert Option قد لا يدعم تسجيل الدخول المباشر" });
-      }
-    });
-  });
+    if (token) {
+      return { token };
+    } else {
+      return { token: null, error: "فشل تسجيل الدخول — تحقق من البريد وكلمة المرور" };
+    }
+  } catch (e: any) {
+    return { token: null, error: e?.message || "خطأ في المتصفح المخفي" };
+  }
 }
