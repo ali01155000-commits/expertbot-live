@@ -131,13 +131,16 @@ export default function LoginScreen() {
   const connectWithToken = useCallback(
     (t: string) => {
       if (!t.trim()) return;
+      const cleanToken = t.trim();
       try {
-        localStorage.setItem(TOKEN_KEY, t.trim());
+        localStorage.setItem(TOKEN_KEY, cleanToken);
       } catch {}
+      // حدّث token state حتى يظهر زر QR Code بالتوكن الصحيح
+      setToken(cleanToken);
       useExpertStore.getState().setConnecting(true);
       useExpertStore.getState().setConnectionError(null);
       useExpertStore.getState().setRegion(region);
-      socket.emit("expert:connect", { token: t.trim(), region, isDemo });
+      socket.emit("expert:connect", { token: cleanToken, region, isDemo });
     },
     [region, isDemo, socket]
   );
@@ -208,13 +211,18 @@ export default function LoginScreen() {
     } catch {}
   }, [region, isDemo]);
 
-  /** Generate a QR code containing the app URL + token. */
+  /** Generate a QR code containing the app URL + token (ready for iPhone). */
   const showQrCode = async () => {
-    if (!token) return;
+    // اقرأ التوكن من state أو localStorage
+    const t = token || (typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : "") || "";
+    if (!t) {
+      alert("لا يوجد توكن! سجّل دخولك أولاً ثم اضغط هذا الزر.");
+      return;
+    }
     const appUrl =
       typeof window !== "undefined" ? window.location.origin + "/" : "/";
     const urlWithToken =
-      appUrl + (appUrl.includes("?") ? "&" : "?") + "token=" + encodeURIComponent(token);
+      appUrl + "?token=" + encodeURIComponent(t);
     try {
       const dataUrl = await QRCode.toDataURL(urlWithToken, {
         width: 320,
