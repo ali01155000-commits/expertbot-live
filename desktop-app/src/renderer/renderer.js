@@ -1,19 +1,17 @@
-// renderer.js — ExpertBot Live desktop app logic
-// Controls the <webview> (embedded Expert Option) and runs the bot.
+// renderer.js — ExpertBot Live desktop app
+// يفتح Expert Option، يلتقط التوكن تلقائياً، ويتداول آلياً
 
 const webview = document.getElementById("eo-webview");
 const loadingOverlay = document.getElementById("loading-overlay");
 const eoStatus = document.getElementById("eo-status");
 const botStatusEl = document.getElementById("bot-status");
-const balanceEl = document.getElementById("balance");
 const logEl = document.getElementById("log");
 
-// Bot state
 let botRunning = false;
 let botTrades = 0;
-let botPnl = 0;
 let botTimer = null;
 let lastSignalTime = 0;
+let recentCloses = [];
 
 // === Logging ===
 function log(type, message) {
@@ -23,8 +21,7 @@ function log(type, message) {
   entry.textContent = `${time} ${message}`;
   logEl.appendChild(entry);
   logEl.scrollTop = logEl.scrollHeight;
-  // Keep last 200 entries
-  while (logEl.children.length > 200) logEl.removeChild(logEl.firstChild);
+  while (logEl.children.length > 100) logEl.removeChild(logEl.firstChild);
 }
 
 // === Webview lifecycle ===
@@ -36,44 +33,37 @@ webview.addEventListener("did-stop-loading", () => {
   loadingOverlay.classList.add("hidden");
   eoStatus.textContent = "متصل";
   eoStatus.className = "badge emerald";
-  log("info", "تم تحميل منصة Expert Option — سجّل دخولك للبدء");
+  log("info", "تم تحميل Expert Option — سجّل دخولك للبدء");
 });
 
 webview.addEventListener("did-fail-load", (e) => {
   if (e.errorCode !== -3) {
     log("error", `فشل تحميل Expert Option: ${e.errorDescription}`);
-    eoStatus.textContent = "خطأ";
-    eoStatus.className = "badge warn";
   }
 });
 
-// Messages from the inject script (inside Expert Option page)
+// Messages from inject.js
 webview.addEventListener("ipc-message", (e) => {
   if (e.channel === "eo-log") {
     log(e.args[0] || "info", e.args[1] || "");
   } else if (e.channel === "eo-balance") {
-    balanceEl.textContent = `الرصيد: ${e.args[0]} $`;
+    document.getElementById("stat-balance").textContent = e.args[0] + " $";
   }
 });
 
-// === Execute JS inside the webview (via preload bridge) ===
+// === Execute JS inside Expert Option page ===
 async function execInWebview(code) {
-  if (!window.expertBot) {
-    log("error", "preload bridge غير متاح");
-    return null;
-  }
+  if (!window.expertBot) return null;
   const res = await window.expertBot.executeInWebview(code);
   if (!res.ok) {
-    log("error", `webview exec error: ${res.error}`);
+    log("error", `خطأ: ${res.error}`);
     return null;
   }
   return res.result;
 }
 
-// === Bot actions: click Buy/Sell inside Expert Option ===
+// === Bot actions ===
 async function clickTrade(direction) {
-  // The inject.js exposes window.__expertBot.clickTrade(direction)
-  // which finds and clicks the actual Buy/Sell button on the page.
   const result = await execInWebview(`
     (function() {
       if (window.__expertBot && window.__expertBot.clickTrade) {
@@ -83,34 +73,28 @@ async function clickTrade(direction) {
     })()
   `);
   if (result && result.ok) {
-    log("trade", `${direction === "call" ? "▲ شراء" : "▼ بيع"} — تم الضغط على الزر`);
+    log("trade", `${direction === "call" ? "▲ شراء" : "▼ بيع"} — تم الضغط`);
+    botTrades++;
+    document.getElementById("stat-trades").textContent = botTrades;
   } else {
-    log("error", `فشل الضغط على زر ${direction}: ${result?.error || "غير معروف"}`);
+    log("error", `فشل الضغط: ${result?.error || "غير معروف"}`);
   }
-  return result;
 }
 
 async function getBalance() {
   const result = await execInWebview(`
-    (window.__expertBot && window.__expertBot.getBalance) ? window.__expertBot.getBalance() : null
+    (window.__expertBot && window.__expertBot.getBalance)
+      ? window.__expertBot.getBalance() : null
   `);
   if (typeof result === "number") {
-    balanceEl.textContent = `الرصيد: ${result.toFixed(2)} $`;
-    return result;
+    document.getElementById("stat-balance").textContent = result.toFixed(2) + " $";
   }
-  return null;
 }
 
-async function getCurrentPrice() {
+async function getRecentCloses() {
   const result = await execInWebview(`
-    (window.__expertBot && window.__expertBot.getCurrentPrice) ? window.__expertBot.getCurrentPrice() : null
-  `);
-  return typeof result === "number" ? result : null;
-}
-
-async function getRecentCandles() {
-  const result = await execInWebview(`
-    (window.__expertBot && window.__expertBot.getRecentCloses) ? window.__expertBot.getRecentCloses() : []
+    (window.__expertBot && window.__expertBot.getRecentCloses)
+      ? window.__expertBot.getRecentCloses() : []
   `);
   return Array.isArray(result) ? result : [];
 }
@@ -131,11 +115,11 @@ function rsi(values, period = 14) {
     if (diff >= 0) gains += diff; else losses -= diff;
   }
   if (losses === 0) return 100;
-  const rs = gains / period / (losses / period);
+  const rs = (gains / period) / (losses / period);
   return 100 - 100 / (1 + rs);
 }
 
-// === Strategy evaluation ===
+// === Strategy ===
 function evaluate(strategy, candles) {
   if (candles.length < 8) return null;
   if (strategy === "ma_cross") {
@@ -171,32 +155,20 @@ function evaluate(strategy, candles) {
 async function botLoop() {
   if (!botRunning) return;
   try {
-    const candles = await getRecentCandles();
+    const candles = await getRecentCloses();
     const strategy = document.getElementById("strategy").value;
     const dir = evaluate(strategy, candles);
     if (dir) {
       const now = Date.now();
-      const cooldown = 10000;
-      if (now - lastSignalTime > cooldown) {
+      if (now - lastSignalTime > 10000) {
         lastSignalTime = now;
         log("signal", `✦ إشارة ${strategy} → ${dir === "call" ? "▲ شراء" : "▼ بيع"}`);
-        const result = await clickTrade(dir);
-        if (result && result.ok) {
-          botTrades++;
-          document.getElementById("stat-trades").textContent = botTrades;
-          log("trade", `🤖 نُفّذت صفقة ${dir} (عبر الضغط على زر Expert Option)`);
-        }
-        const maxTrades = parseInt(document.getElementById("max-trades").value) || 0;
-        if (maxTrades > 0 && botTrades >= maxTrades) {
-          log("info", `تم الوصول لأقصى عدد صفقات (${maxTrades}) — إيقاف البوت`);
-          stopBot();
-          return;
-        }
+        await clickTrade(dir);
       }
     }
     await getBalance();
   } catch (e) {
-    log("error", `خطأ في حلقة البوت: ${e.message}`);
+    log("error", `خطأ: ${e.message}`);
   }
 }
 
@@ -204,14 +176,12 @@ function startBot() {
   if (botRunning) return;
   botRunning = true;
   botTrades = 0;
-  botPnl = 0;
   document.getElementById("stat-trades").textContent = "0";
-  document.getElementById("stat-pnl").textContent = "0.00$";
   document.getElementById("btn-start").classList.add("hidden");
   document.getElementById("btn-stop").classList.remove("hidden");
   botStatusEl.textContent = "البوت يعمل";
   botStatusEl.className = "badge active";
-  log("info", `▶ تشغيل البوت — إستراتيجية ${document.getElementById("strategy").value}`);
+  log("info", `▶ تشغيل البوت — ${document.getElementById("strategy").value}`);
   botTimer = setInterval(botLoop, 3000);
 }
 
@@ -226,19 +196,10 @@ function stopBot() {
   log("info", "■ تم إيقاف البوت");
 }
 
-// === UI bindings ===
+// === UI ===
 document.getElementById("btn-start").addEventListener("click", startBot);
 document.getElementById("btn-stop").addEventListener("click", stopBot);
 document.getElementById("btn-call").addEventListener("click", () => clickTrade("call"));
 document.getElementById("btn-put").addEventListener("click", () => clickTrade("put"));
 
-document.getElementById("btn-reload").addEventListener("click", () => {
-  webview.reload();
-});
-
-document.getElementById("btn-toggle-panel").addEventListener("click", () => {
-  document.getElementById("bot-panel").classList.toggle("hidden");
-});
-
-// Initial log
-log("info", "مرحباً بك في ExpertBot Live — سجّل دخولك في Expert Option بالأعلى");
+log("info", "مرحباً! سجّل دخولك في Expert Option بالأعلى ثم شغّل البوت");
