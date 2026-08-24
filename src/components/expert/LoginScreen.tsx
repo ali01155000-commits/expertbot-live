@@ -107,6 +107,9 @@ export default function LoginScreen() {
   const [showManual, setShowManual] = useState(false);
   const [manualToken, setManualToken] = useState("");
   const [copied, setCopied] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [logging, setLogging] = useState(false);
 
   // Device detection (lazy init — only runs on client, gated by `mounted` below)
   const [device] = useState<"iphone" | "android" | "desktop">(() =>
@@ -194,6 +197,7 @@ export default function LoginScreen() {
       return;
     }
     if (token && !connecting) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       connectWithToken(token);
     }
   }, [token, connecting, connectWithToken]);
@@ -243,6 +247,26 @@ export default function LoginScreen() {
     setToken("");
     setManualToken("");
     useExpertStore.getState().setConnectionError(null);
+  };
+
+  // === تسجيل الدخول بالبريد وكلمة المرور ===
+  const handleLogin = () => {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      useExpertStore.getState().setConnectionError("أدخل البريد وكلمة المرور");
+      return;
+    }
+    setLogging(true);
+    useExpertStore.getState().setConnecting(true);
+    useExpertStore.getState().setConnectionError(null);
+    const socket = getExpertSocket();
+    if (socket) {
+      socket.emit("expert:login", {
+        email: loginEmail.trim(),
+        password: loginPassword.trim(),
+        region,
+        isDemo,
+      });
+    }
   };
 
   const handleManualConnect = () => {
@@ -429,6 +453,12 @@ export default function LoginScreen() {
                   onManualConnect={handleManualConnect}
                   onOpenExpertOption={openExpertOption}
                   onShowQr={showQrCode}
+                  loginEmail={loginEmail}
+                  loginPassword={loginPassword}
+                  setLoginEmail={setLoginEmail}
+                  setLoginPassword={setLoginPassword}
+                  onLogin={handleLogin}
+                  logging={logging}
                 />
               )}
 
@@ -752,6 +782,12 @@ function DesktopLoginSection(props: {
   onManualConnect: () => void;
   onOpenExpertOption: () => void;
   onShowQr: () => void;
+  loginEmail: string;
+  loginPassword: string;
+  setLoginEmail: (v: string) => void;
+  setLoginPassword: (v: string) => void;
+  onLogin: () => void;
+  logging: boolean;
 }) {
   const {
     token,
@@ -761,6 +797,12 @@ function DesktopLoginSection(props: {
     setManualToken,
     onManualConnect,
     onShowQr,
+    loginEmail,
+    loginPassword,
+    setLoginEmail,
+    setLoginPassword,
+    onLogin,
+    logging,
   } = props;
 
   return (
@@ -772,65 +814,89 @@ function DesktopLoginSection(props: {
           تسجيل الدخول
         </h2>
         <p className="mt-2 text-sm text-zinc-400">
-          اضغط الزر، سجّل دخولك في Expert Option، ثم ارجع والصق التوكن
+          أدخل بريد وكلمة مرور Expert Option — لا حاجة للتوكن
         </p>
       </div>
 
-      {/* One button — opens EO + copies capture command */}
+      {/* Login with email + password */}
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5">
-        <Button
-          onClick={() => {
-            // 1. انسخ أمر بسيط
-            navigator.clipboard?.writeText(
-              "copy(JSON.stringify(localStorage))"
-            );
-            // 2. افتح Expert Option
-            window.open("https://app.expertoption.com/", "_blank");
-            // 3. أظهر تعليمات
-            alert(
-              "تم نسخ الأمر وفتح Expert Option!\n\n" +
-              "في Expert Option:\n" +
-              "1. سجّل دخولك\n" +
-              "2. اضغط F12\n" +
-              "3. اضغط Console\n" +
-              "4. اضغط Ctrl+V ثم Enter\n\n" +
-              "ارجع هنا والصق النتيجة"
-            );
-          }}
-          className="w-full h-14 gap-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold text-base"
-        >
-          <ExternalLink className="size-6" />
-          افتح Expert Option
-        </Button>
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm font-bold text-zinc-200 mb-1.5 block">
+              البريد الإلكتروني
+            </label>
+            <input
+              type="email"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && loginEmail && loginPassword) onLogin(); }}
+              placeholder="example@email.com"
+              className="w-full h-12 rounded-xl bg-black/40 border border-white/10 px-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/50 outline-none"
+              dir="ltr"
+              autoComplete="off"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-bold text-zinc-200 mb-1.5 block">
+              كلمة المرور
+            </label>
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && loginEmail && loginPassword) onLogin(); }}
+              placeholder="••••••••"
+              className="w-full h-12 rounded-xl bg-black/40 border border-white/10 px-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/50 outline-none"
+              dir="ltr"
+              autoComplete="off"
+            />
+          </div>
+          <button
+            onClick={onLogin}
+            disabled={connecting || !loginEmail.trim() || !loginPassword.trim()}
+            className="w-full h-14 rounded-xl bg-emerald-500 text-black font-bold text-base hover:bg-emerald-400 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {connecting ? (
+              <>
+                <Loader2 className="size-5 animate-spin" />
+                جارٍ تسجيل الدخول...
+              </>
+            ) : (
+              <>
+                <LogIn className="size-5" />
+                دخول وبدء التداول
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Paste field */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <label className="text-sm font-bold text-zinc-200 mb-2 block">
-          ألصق التوكن هنا
-        </label>
-        <Input
-          type="text"
-          value={manualToken}
-          onChange={(e) => setManualToken(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && manualToken.trim()) onManualConnect();
-          }}
-          placeholder="ألصق هنا..."
-          className="bg-black/40 font-mono text-sm border-white/10 text-zinc-100 placeholder:text-zinc-600 h-12"
-          autoComplete="off"
-          spellCheck={false}
-          dir="ltr"
-        />
-        <Button
-          onClick={onManualConnect}
-          disabled={connecting || !manualToken.trim()}
-          className="w-full h-12 mt-2 bg-emerald-500 text-black hover:bg-emerald-400 font-bold gap-2"
-        >
-          {connecting ? <Loader2 className="size-5 animate-spin" /> : <LogIn className="size-5" />}
-          اتصال
-        </Button>
-      </div>
+      {/* Manual token (fallback) */}
+      <details className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <summary className="cursor-pointer text-sm text-zinc-400 hover:text-zinc-200 transition">
+          لديك توكن؟ اضغط هنا للإدخال اليدوي
+        </summary>
+        <div className="mt-3 space-y-2">
+          <input
+            type="text"
+            value={manualToken}
+            onChange={(e) => setManualToken(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && manualToken.trim()) onManualConnect(); }}
+            placeholder="ألصق التوكن هنا..."
+            className="w-full h-12 rounded-xl bg-black/40 border border-white/10 px-4 font-mono text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/50 outline-none"
+            dir="ltr"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button
+            onClick={onManualConnect}
+            disabled={connecting || !manualToken.trim()}
+            className="w-full h-12 rounded-xl bg-zinc-700 text-white font-bold hover:bg-zinc-600 transition disabled:opacity-50"
+          >
+            اتصال بالتوكن
+          </button>
+        </div>
+      </details>
 
       {/* QR for iPhone */}
       {token && (
@@ -854,7 +920,9 @@ function DesktopLoginSection(props: {
       {connecting && (
         <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.08] p-3">
           <Loader2 className="size-4 animate-spin text-emerald-400 shrink-0" />
-          <span className="text-sm text-emerald-200">جارٍ الاتصال...</span>
+          <span className="text-sm text-emerald-200">
+            {logging ? "جارٍ تسجيل الدخول بـ Expert Option..." : "جارٍ الاتصال..."}
+          </span>
         </div>
       )}
 
