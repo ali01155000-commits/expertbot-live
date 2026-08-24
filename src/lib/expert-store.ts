@@ -74,6 +74,13 @@ function attachExpertListeners(socket: Socket, store: ExpertStoreApi) {
   // --- Expert Option status / connection lifecycle
   socket.on("expert:status", (data: ExpertStatusPayload) => {
     const s = store.getState();
+    // إذا كان logging=true، لا تغير connecting (البوت لا يزال يسجل الدخول)
+    if (data.logging) {
+      s.setConnecting(true);
+      s.setConnectionError(null);
+      log("info", "جارٍ تسجيل الدخول بـ Expert Option...");
+      return;
+    }
     s.setConnected(!!data.connected);
     s.setConnecting(false);
     if (data.region) s.setRegion(data.region);

@@ -204,6 +204,7 @@ export interface ExpertStatusPayload {
   connected: boolean;
   error?: string;
   region?: string;
+  logging?: boolean;
 }
 
 export type ExpertProfilePayload = Profile;
