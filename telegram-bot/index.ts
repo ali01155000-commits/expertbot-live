@@ -16,7 +16,7 @@ import { URL } from "url";
 // ===== الإعدادات =====
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8943921942:AAFabWQ7_cQt0ZfctM2sFAA6FQm7RqT-u4k";
 const WEBAPP_URL = process.env.WEBAPP_URL || "https://alfa-option.com";
-const PORT = 3004;
+const PORT = 3010;
 
 // ===== حالة كل مستخدم =====
 interface UserSession {
