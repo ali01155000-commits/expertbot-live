@@ -13,80 +13,39 @@
         <span class="name">Expert<span class="accent">Bot</span> Live</span>
       </div>
       <div class="status">
-        <span id="eo-status" class="badge warn">غير متصل</span>
-        <span id="bot-status" class="badge">البوت متوقف</span>
+        <span id="eo-status" class="badge warn">Expert Option: غير متصل</span>
+        <span id="bot-status" class="badge">البوت: متوقف</span>
+        <span id="token-status" class="badge">جارٍ البحث عن التوكن…</span>
       </div>
     </header>
 
     <main id="main">
-      <!-- Expert Option embedded browser -->
-      <div id="webview-wrap">
+      <!-- يمين: Expert Option -->
+      <div id="eo-panel">
+        <div id="eo-header">Expert Option — سجّل دخولك هنا</div>
         <webview
           id="eo-webview"
           src="https://app.expertoption.com/"
           allowpopups
           disablewebsecurity
           plugins
-          preload="./inject.js"
           partition="persist:expertoption"
         ></webview>
-        <div id="loading-overlay">
-          <div class="spinner"></div>
-          <p>جارٍ تحميل Expert Option…</p>
-          <p class="hint">سجّل دخولك عندما تظهر الصفحة</p>
-        </div>
       </div>
 
-      <!-- Bot panel -->
-      <aside id="bot-panel">
-        <h2>لوحة التحكم</h2>
-
-        <div class="field">
-          <label>الإستراتيجية</label>
-          <select id="strategy">
-            <option value="trend">متابعة الاتجاه</option>
-            <option value="rsi">مؤشر RSI</option>
-            <option value="ma_cross">تقاطع المتوسطات</option>
-            <option value="alligator">Alligator</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>قيمة الرهان ($)</label>
-          <input id="amount" type="number" min="1" value="10" />
-        </div>
-
-        <div class="field">
-          <label>مدة الصفقة (ثانية)</label>
-          <select id="expiry">
-            <option value="15">15 ثانية</option>
-            <option value="30" selected>30 ثانية</option>
-            <option value="60">60 ثانية</option>
-            <option value="120">2 دقيقة</option>
-          </select>
-        </div>
-
-        <button id="btn-start" class="btn-start">▶ تشغيل البوت</button>
-        <button id="btn-stop" class="btn-stop hidden">■ إيقاف البوت</button>
-
-        <div class="manual-row">
-          <button id="btn-call" class="btn-call">▲ شراء</button>
-          <button id="btn-put" class="btn-put">▼ بيع</button>
-        </div>
-
-        <div class="stats">
-          <div><span>صفقات:</span> <span id="stat-trades">0</span></div>
-          <div><span>الرصيد:</span> <span id="stat-balance">—</span></div>
-        </div>
-
-        <div class="log-wrap">
-          <div class="log-header">سجل النشاط</div>
-          <div id="log"></div>
-        </div>
-      </aside>
+      <!-- يسار: البوت -->
+      <div id="bot-panel">
+        <div id="bot-header">لوحة تحكم البوت</div>
+        <webview
+          id="bot-webview"
+          src="about:blank"
+          allowpopups
+          disablewebsecurity
+          partition="persist:bot"
+        ></webview>
+      </div>
     </main>
   </div>
-
   <script src="renderer.js"></script>
 </body>
 </html>
