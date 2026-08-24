@@ -1,41 +1,119 @@
-// popup.js — منطق نافذة الإضافة المنبثقة
+// popup.js — لوحة تحكم البوت
 
-const DEFAULT_URL = "http://localhost:81/";
-const input = document.getElementById("appUrl");
-const openApp = document.getElementById("openApp");
-const resetBtn = document.getElementById("resetBtn");
-const savedMsg = document.getElementById("savedMsg");
+const statusEl = document.getElementById("status");
+const statusText = document.getElementById("status-text");
+const btnStart = document.getElementById("btn-start");
+const btnStop = document.getElementById("btn-stop");
+const btnCall = document.getElementById("btn-call");
+const btnPut = document.getElementById("btn-put");
+const btnOpenEO = document.getElementById("open-eo");
+const tradesEl = document.getElementById("trades");
+const balanceEl = document.getElementById("balance-display");
 
-// حمّل الرابط المحفوظ
-function loadUrl() {
-  chrome.storage?.local.get(["expertbot_app_url"], (res) => {
-    const url = (res && res.expertbot_app_url) || DEFAULT_URL;
-    input.value = url;
-    openApp.href = url;
+// تحديث الحالة كل ثانية
+function updateStatus() {
+  chrome.tabs.query({ url: "https://app.expertoption.com/*" }, (tabs) => {
+    if (tabs.length === 0) {
+      statusEl.className = "status disconnected";
+      statusText.textContent = "غير متصل — افتح Expert Option";
+      btnStart.disabled = true;
+      btnCall.disabled = true;
+      btnPut.disabled = true;
+      return;
+    }
+
+    chrome.tabs.sendMessage(tabs[0].id, { type: "getStatus" }, (response) => {
+      if (chrome.runtime.lastError || !response) {
+        statusEl.className = "status disconnected";
+        statusText.textContent = "جارٍ التحميل...";
+        btnStart.disabled = true;
+        return;
+      }
+
+      if (response.connected) {
+        statusEl.className = "status connected";
+        statusText.textContent = "✅ متصل بـ Expert Option";
+        btnStart.disabled = false;
+        btnCall.disabled = false;
+        btnPut.disabled = false;
+        tradesEl.textContent = response.trades || 0;
+      } else if (response.token) {
+        statusEl.className = "status disconnected";
+        statusText.textContent = "⏳ جارٍ الاتصال...";
+        btnStart.disabled = true;
+      } else {
+        statusEl.className = "status disconnected";
+        statusText.textContent = "⏳ سجّل دخولك في Expert Option";
+        btnStart.disabled = true;
+      }
+    });
   });
 }
 
-// احفظ الرابط
-function saveUrl(url) {
-  const clean = (url || "").trim() || DEFAULT_URL;
-  chrome.storage?.local.set({ expertbot_app_url: clean }, () => {
-    input.value = clean;
-    openApp.href = clean;
-    // أظهر مؤشر الحفظ
-    savedMsg.classList.add("show");
-    setTimeout(() => savedMsg.classList.remove("show"), 1500);
-  });
-}
+// فتح Expert Option
+btnOpenEO.addEventListener("click", () => {
+  chrome.tabs.create({ url: "https://app.expertoption.com/" });
+});
 
-input.addEventListener("change", () => saveUrl(input.value));
-input.addEventListener("blur", () => saveUrl(input.value));
+// تشغيل البوت
+btnStart.addEventListener("click", () => {
+  const config = {
+    strategy: document.getElementById("strategy").value,
+    amount: parseInt(document.getElementById("amount").value),
+    expiry: parseInt(document.getElementById("expiry").value),
+  };
 
-resetBtn.addEventListener("click", () => {
-  chrome.storage?.local.set({ expertbot_app_url: DEFAULT_URL }, () => {
-    loadUrl();
-    savedMsg.classList.add("show");
-    setTimeout(() => savedMsg.classList.remove("show"), 1500);
+  chrome.tabs.query({ url: "https://app.expertoption.com/*" }, (tabs) => {
+    if (tabs.length > 0) {
+      chrome.tabs.sendMessage(tabs[0].id, { type: "startBot", config: config });
+      btnStart.style.display = "none";
+      btnStop.style.display = "block";
+    }
   });
 });
 
-loadUrl();
+// إيقاف البوت
+btnStop.addEventListener("click", () => {
+  chrome.tabs.query({ url: "https://app.expertoption.com/*" }, (tabs) => {
+    if (tabs.length > 0) {
+      chrome.tabs.sendMessage(tabs[0].id, { type: "stopBot" });
+      btnStart.style.display = "block";
+      btnStop.style.display = "none";
+    }
+  });
+});
+
+// تداول يدوي
+btnCall.addEventListener("click", () => {
+  const amount = parseInt(document.getElementById("amount").value);
+  const expiry = parseInt(document.getElementById("expiry").value);
+  chrome.tabs.query({ url: "https://app.expertoption.com/*" }, (tabs) => {
+    if (tabs.length > 0) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: "manualTrade",
+        direction: "call",
+        amount: amount,
+        expiry: expiry,
+      });
+    }
+  });
+});
+
+btnPut.addEventListener("click", () => {
+  const amount = parseInt(document.getElementById("amount").value);
+  const expiry = parseInt(document.getElementById("expiry").value);
+  chrome.tabs.query({ url: "https://app.expertoption.com/*" }, (tabs) => {
+    if (tabs.length > 0) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: "manualTrade",
+        direction: "put",
+        amount: amount,
+        expiry: expiry,
+      });
+    }
+  });
+});
+
+// حدّث كل ثانية
+updateStatus();
+setInterval(updateStatus, 1000);

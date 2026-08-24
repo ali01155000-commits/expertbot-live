@@ -2,176 +2,142 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>ExpertBot</title>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      width: 320px;
-      margin: 0;
-      padding: 16px;
+      font-family: system-ui, sans-serif;
+      width: 340px;
       background: #0a0e14;
       color: #e4e4e7;
+      padding: 16px;
     }
-    .logo {
+    .header {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #10b981, #059669);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-    h1 {
-      font-size: 14px;
-      font-weight: 700;
-      margin: 0;
-    }
-    p {
-      font-size: 12px;
-      color: #a1a1aa;
-      line-height: 1.5;
-      margin: 8px 0;
-    }
+    .logo { font-size: 24px; }
+    .title { font-size: 16px; font-weight: 700; }
+    .accent { color: #10b981; }
     .status {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      gap: 6px;
+      padding: 8px 12px;
       border-radius: 8px;
-      margin: 12px 0;
-    }
-    .dot {
-      width: 8px;
-      height: 8px;
-      background: #10b981;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-    .status-text {
+      margin-bottom: 12px;
       font-size: 12px;
-      font-weight: 600;
-      color: #10b981;
     }
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 10px;
-      background: #10b981;
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 8px;
-      text-decoration: none;
-      text-align: center;
-    }
-    .btn:hover {
-      background: #34d399;
-    }
-    .btn-secondary {
-      background: rgba(255,255,255,0.05);
-      color: #e4e4e7;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.1);
-    }
-    .field {
-      margin-top: 12px;
-    }
-    .field label {
-      display: block;
-      font-size: 11px;
-      color: #71717a;
-      margin-bottom: 4px;
-    }
-    .field input {
+    .status.connected { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .status.disconnected { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.green { background: #10b981; }
+    .dot.red { background: #ef4444; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 11px; color: #71717a; margin-bottom: 4px; }
+    select, input {
       width: 100%;
       padding: 8px;
       background: rgba(0,0,0,0.4);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 6px;
       color: #e4e4e7;
-      font-size: 12px;
-      box-sizing: border-box;
-      font-family: monospace;
+      font-size: 13px;
     }
-    .field input:focus {
-      outline: none;
-      border-color: rgba(16,185,129,0.5);
-    }
-    .hint {
-      font-size: 10px;
-      color: #52525b;
-      margin-top: 6px;
-      line-height: 1.4;
-    }
-    .saved-indicator {
-      display: none;
-      font-size: 10px;
-      color: #10b981;
-      margin-top: 4px;
-    }
-    .saved-indicator.show {
-      display: block;
-    }
-    hr {
+    select:focus, input:focus { outline: none; border-color: rgba(16,185,129,0.5); }
+    .btn {
+      width: 100%;
+      padding: 10px;
       border: none;
-      border-top: 1px solid rgba(255,255,255,0.08);
-      margin: 12px 0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 8px;
     }
+    .btn-green { background: #10b981; color: black; }
+    .btn-green:hover { background: #34d399; }
+    .btn-red { background: #ef4444; color: white; }
+    .btn-red:hover { background: #f87171; }
+    .btn-blue { background: #3b82f6; color: white; }
+    .btn-blue:hover { background: #60a5fa; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .open-eo {
+      text-align: center;
+      padding: 8px;
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #60a5fa;
+      cursor: pointer;
+    }
+    .open-eo:hover { background: rgba(59,130,246,0.2); }
   </style>
 </head>
 <body>
-  <div class="logo">
-    <div class="logo-icon">🤖</div>
-    <h1>ExpertBot Auto Login</h1>
+  <div class="header">
+    <span class="logo">🤖</span>
+    <span class="title">Expert<span class="accent">Bot</span></span>
   </div>
 
-  <div class="status">
-    <span class="dot"></span>
-    <span class="status-text">الإضافة فعّالة</span>
+  <div id="status" class="status disconnected">
+    <span class="dot red"></span>
+    <span id="status-text">غير متصل — افتح Expert Option</span>
   </div>
 
-  <p>
-    افتح <strong>app.expertoption.com</strong> وسجّل دخولك —
-    سيُلتقط التوكن تلقائياً ويُفتح التطبيق جاهزاً للتداول.
-  </p>
-
-  <a href="#" id="openApp" target="_blank" class="btn">
-    فتح التطبيق
-  </a>
-
-  <hr>
+  <div class="open-eo" id="open-eo">🌐 افتح Expert Option</div>
 
   <div class="field">
-    <label>رابط التطبيق (Bot URL)</label>
-    <input id="appUrl" type="text" placeholder="https://your-domain.com/" dir="ltr" />
-    <div class="hint">
-      غيّره ليناسب نطاقك عند نشر التطبيق على سيرفر مدفوع.
-      الإضافة تعمل مع أي نسخة من التطبيق.
-    </div>
-    <div class="saved-indicator" id="savedMsg">✓ تم الحفظ</div>
+    <label>الإستراتيجية</label>
+    <select id="strategy">
+      <option value="trend">متابعة الاتجاه</option>
+      <option value="rsi">مؤشر RSI</option>
+      <option value="ma_cross">تقاطع المتوسطات</option>
+      <option value="alligator">Alligator</option>
+    </select>
   </div>
 
-  <button class="btn btn-secondary" id="resetBtn" style="margin-top: 8px;">
-    استعادة الرابط الافتراضي
-  </button>
+  <div class="row">
+    <div class="field">
+      <label>الرهان ($)</label>
+      <input type="number" id="amount" value="10" min="1" />
+    </div>
+    <div class="field">
+      <label>المدة (ث)</label>
+      <select id="expiry">
+        <option value="15">15</option>
+        <option value="30" selected>30</option>
+        <option value="60">60</option>
+        <option value="120">120</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn btn-green" id="btn-start">▶ تشغيل البوت</button>
+  <button class="btn btn-red" id="btn-stop" style="display:none;">■ إيقاف البوت</button>
+
+  <div class="row">
+    <button class="btn btn-green" id="btn-call" style="font-size:12px;">▲ شراء</button>
+    <button class="btn btn-red" id="btn-put" style="font-size:12px;">▼ بيع</button>
+  </div>
+
+  <div class="stats">
+    <span>📊 صفقات: <span id="trades">0</span></span>
+    <span id="balance-display">💰 —</span>
+  </div>
 
   <script src="popup.js"></script>
 </body>
